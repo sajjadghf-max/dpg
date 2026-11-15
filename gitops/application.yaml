@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app
+  namespace: argocd
+spec:
+  project: dpg
+  source:
+    repoURL: https://github.com/sajjadghf-max/dpg.git
+    targetRevision: main
+    path: charts/dpg-app
+    helm:
+      releaseName: app
+      skipTests: true
+      valuesObject:
+        nginx:
+          image: dpg-nginx:sha-7705edabaaf71ac0a7b5bc916e69b8da4b430c50e9bf7d5723517b1b4bacda46
+        php:
+          image: dpg-php:sha-d98d83bfc9df17009252b50bde2e09cfd028292e17718489c3413d8080873e61
+        monitoring:
+          enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dpg-app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 2
+      backoff: {duration: 5s, factor: 2, maxDuration: 30s}
+  # The HPA owns replicas; do not reset its scale decisions during sync.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers: [/spec/replicas]

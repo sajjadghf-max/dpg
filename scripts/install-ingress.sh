@@ -42,6 +42,9 @@ helm upgrade --install traefik "$chart" --namespace ingress-system --create-name
   --values platform/traefik/values.yaml "${monitoring_args[@]}" --skip-crds --wait --timeout 180s
 "$kubectl" apply -f platform/traefik/networkpolicy.yaml
 # Keep the content-based image tags while loading the chart's new defaults.
+if "$kubectl" -n argocd get application app >/dev/null 2>&1; then
+  echo 'Argo CD owns app; preserving its Git-managed settings.'
+else
 helm get values app --namespace dpg-app -o json | python3 -c '
 import json,sys
 v=json.load(sys.stdin)
@@ -51,5 +54,6 @@ print(json.dumps(result))
 ' > .state/app-images.json
 helm upgrade app charts/dpg-app --namespace dpg-app --reset-values \
   --values .state/app-images.json --wait --timeout 180s
+fi
 .venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/load-balancer.yml
 bash scripts/check-ingress.sh

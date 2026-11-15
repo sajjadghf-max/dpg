@@ -56,7 +56,9 @@ The check script waits for healthy Prometheus targets, confirms both application
 exporters can reach their local processes, and checks kubelet and Traefik scrapes.
 It verifies Grafana's certificate, rejects anonymous API access, and tests the
 admin login without placing the password in process arguments. It also repeats
-the application HTTPS/client-IP checks and Helm network tests.
+the application HTTPS/client-IP checks and allowed/denied network tests.
+After Argo CD adoption, the network test pods are rendered from the chart instead
+of using the old Helm release history.
 
 The provisioned **Digipay application** dashboard is at `/d/dpg-application`.
 Its [JSON export](../charts/dpg-observability/files/dashboard.json) stays in Git.

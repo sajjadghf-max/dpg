@@ -5,7 +5,7 @@ Vagrant creates four local VMs. Kubespray installs Kubernetes and its prerequisi
 | VM | IP | RAM | vCPUs | Intended role |
 | --- | --- | --- | --- | --- |
 | lb | 192.168.56.10 | 512 MiB | 1 | HAProxy for the API and ingress |
-| cp1 | 192.168.56.11 | 2 GiB | 2 | Control plane and etcd |
+| cp1 | 192.168.56.11 | 3 GiB | 2 | Control plane and etcd |
 | worker1 | 192.168.56.21 | 3 GiB | 2 | Application and platform workloads |
 | worker2 | 192.168.56.22 | 3 GiB | 2 | Application and platform workloads |
 
@@ -46,7 +46,7 @@ and [libvirt plugin requirements](https://vagrant-libvirt.github.io/vagrant-libv
 
 ## Create the VMs
 
-The four VMs reserve 8.5 GiB RAM in total. Free at least 10 GiB of available host
+The four VMs reserve 9.5 GiB RAM in total. Free at least 11 GiB of available host
 memory before starting all four, allowing some room for virtualization overhead.
 This is an initial budget; workload capacity still needs measurement.
 
@@ -170,3 +170,15 @@ See [SLO targets and alert delivery](docs/alerting.md).
 See [the two bounded lab exercises](docs/failure-exercises.md) and their measured
 postmortems. They deliberately disrupt this lab; do not run them concurrently
 or during deployment.
+
+### GitOps and CI
+
+```sh
+bash scripts/install-gitops.sh
+bash scripts/check-gitops.sh
+bash scripts/setup-validation.sh
+bash scripts/validate.sh
+```
+
+Argo CD Core manages the application from `main`; use Git for chart changes.
+See [GitOps ownership, image updates, CI, and rollback](docs/gitops.md).

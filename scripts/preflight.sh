@@ -47,6 +47,6 @@ printf '\nMemory (MiB):\n'
 free -m
 printf '\nDisk space for this checkout:\n'
 df -h "$(dirname -- "${BASH_SOURCE[0]}")/.."
-printf '\nVM RAM allocation: 8704 MiB. Before a cold start, aim for 10240 MiB available.\n'
+printf '\nVM RAM allocation: 9728 MiB. Before a cold start, aim for 11264 MiB available.\n'
 printf 'Available RAM is informational; running lab VMs already use this allocation.\n'
 exit "$missing"

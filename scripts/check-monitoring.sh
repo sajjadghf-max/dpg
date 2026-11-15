@@ -61,4 +61,4 @@ assert v["login"]=="admin" and v["isGrafanaAdmin"], "Grafana admin login failed"
 print("OK Grafana HTTPS, certificate verification, and admin authentication")
 '
 bash scripts/check-ingress.sh
-helm test app --namespace dpg-app --logs --timeout 120s
+bash scripts/check-app-network.sh

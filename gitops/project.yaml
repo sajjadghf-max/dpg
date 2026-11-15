@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: dpg
+  namespace: argocd
+spec:
+  description: Only the lab application namespace and repository
+  sourceRepos: [https://github.com/sajjadghf-max/dpg.git]
+  destinations:
+    - {server: 'https://kubernetes.default.svc', namespace: dpg-app}
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - {group: apps, kind: Deployment}
+    - {group: '', kind: Service}
+    - {group: '', kind: ConfigMap}
+    - {group: policy, kind: PodDisruptionBudget}
+    - {group: autoscaling, kind: HorizontalPodAutoscaler}
+    - {group: networking.k8s.io, kind: NetworkPolicy}
+    - {group: networking.k8s.io, kind: Ingress}
+    - {group: monitoring.coreos.com, kind: ServiceMonitor}

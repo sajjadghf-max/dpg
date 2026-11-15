@@ -6,19 +6,12 @@ export KUBECONFIG="$project_dir/.state/artifacts/admin.conf"
 export ANSIBLE_CONFIG="$project_dir/ansible.cfg"
 
 helm lint charts/dpg-app
-bash scripts/build-images.sh
-mkdir -p .state/images
-images=()
-image_settings=()
-for component in php nginx; do
-  image_id=$(docker image inspect "dpg-$component:lab" --format '{{.Id}}')
-  image="dpg-$component:sha-${image_id#sha256:}"
-  docker tag "dpg-$component:lab" "$image"
-  images+=("$image")
-  image_settings+=(--set-string "$component.image=$image")
-done
-docker image save --platform linux/amd64 --output .state/images/app.tar "${images[@]}"
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/import-images.yml
+if .state/artifacts/kubectl -n argocd get application app >/dev/null 2>&1; then
+  echo 'Argo CD owns app. Use scripts/import-app-images.sh and the GitOps update steps in docs/gitops.md.' >&2
+  exit 1
+fi
+bash scripts/import-app-images.sh
+image_settings=(--values .state/app-images.json)
 if .state/artifacts/kubectl get prometheus monitoring-kube-prometheus-prometheus -n monitoring >/dev/null 2>&1; then
   image_settings+=(--set monitoring.enabled=true)
 fi

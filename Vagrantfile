@@ -2,7 +2,7 @@ Vagrant.require_version "= 2.4.9"
 
 nodes = {
   "lb"      => { ip: "192.168.56.10", memory: 512,  cpus: 1 },
-  "cp1"     => { ip: "192.168.56.11", memory: 2048, cpus: 2 },
+  "cp1"     => { ip: "192.168.56.11", memory: 3072, cpus: 2 },
   "worker1" => { ip: "192.168.56.21", memory: 3072, cpus: 2 },
   "worker2" => { ip: "192.168.56.22", memory: 3072, cpus: 2 }
 }

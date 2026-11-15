@@ -7,7 +7,7 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Choose the host and topology: local machine, one LB, one control plane, two workers.
 - [x] Choose Vagrant/libvirt, Ubuntu 24.04, Kubespray, and Calico.
 - [x] Add read-only host checks.
-- [x] Allocate 8.5 GiB RAM; choose 192.168.56.0/24 for the lab and 192.168.121.0/24 for management (no current route overlap).
+- [x] Allocate 9.5 GiB RAM (control plane increased to 3 GiB during GitOps setup); choose 192.168.56.0/24 for the lab and 192.168.121.0/24 for management (no current route overlap).
 - [x] Add host setup and four VM definitions; pin Vagrant, its libvirt plugin, and the Ubuntu box.
 - [x] Run host setup and verify all four VMs boot and accept SSH.
 - [x] Pin Kubespray, Kubernetes, containerd, etcd, and Calico versions.
@@ -26,7 +26,7 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Add startup/liveness/readiness probes, resource settings, HPA, and PDBs.
 - [x] Restrict traffic with NetworkPolicies and test allowed/denied paths.
 - [x] Add ingress and TLS; verify real client IPs through the full proxy chain.
-- [ ] Configure GitOps and CI chart/manifest validation.
+- [x] Configure GitOps and CI chart/manifest validation (local checks passed; hosted workflow awaits push).
 
 ## Observability and exercises
 
