@@ -1,0 +1,33 @@
+server {
+    listen 8080;
+    location = / {
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /var/www/html/index.php;
+        fastcgi_pass ${PHP_FPM_UPSTREAM};
+    }
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+    location = /readyz {
+        access_log off;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /readyz;
+        fastcgi_pass ${PHP_FPM_UPSTREAM};
+    }
+    location / { return 404; }
+}
+
+# This port is for in-cluster exporters; the public Service will expose only 8080.
+server {
+    listen 8081;
+    access_log off;
+    location = /nginx-status { stub_status; }
+    location = /fpm-status {
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /fpm-status;
+        fastcgi_pass ${FPM_STATUS_UPSTREAM};
+    }
+    location / { return 404; }
+}

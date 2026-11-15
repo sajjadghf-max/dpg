@@ -20,9 +20,10 @@ Checked items are complete. Runtime results will be recorded only after testing.
 
 ## Application and delivery
 
-- [ ] Build PHP-FPM and NGINX images; justify PHP-FPM pool settings.
+- [x] Build PHP-FPM and NGINX images; justify PHP-FPM pool settings.
 - [ ] Package separate NGINX and PHP-FPM workloads in a Helm chart.
-- [ ] Add health/readiness endpoints, startup/liveness/readiness probes, resource settings, HPA, and PDBs.
+- [x] Add separate health/readiness endpoints and internal NGINX/PHP-FPM status endpoints.
+- [ ] Add startup/liveness/readiness probes, resource settings, HPA, and PDBs.
 - [ ] Restrict traffic with NetworkPolicies and test allowed/denied paths.
 - [ ] Add ingress and TLS; verify real client IPs through the full proxy chain.
 - [ ] Configure GitOps and CI chart/manifest validation.
