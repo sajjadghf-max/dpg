@@ -9,7 +9,7 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Add read-only host checks.
 - [x] Allocate 8.5 GiB RAM; choose 192.168.56.0/24 for the lab and 192.168.121.0/24 for management (no current route overlap).
 - [x] Add host setup and four VM definitions; pin Vagrant, its libvirt plugin, and the Ubuntu box.
-- [ ] Run host setup and verify all four VMs boot and accept SSH.
+- [x] Run host setup and verify all four VMs boot and accept SSH.
 - [x] Pin Kubespray, Kubernetes, containerd, etcd, and Calico versions.
 - [x] Add Kubespray inventory, API HAProxy playbook, and provisioning commands.
 - [ ] Automate VM creation and Kubernetes provisioning, including swap, kernel, sysctl, and cgroups.

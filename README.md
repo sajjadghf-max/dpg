@@ -99,9 +99,13 @@ its old host key with `ssh-keygen -f .state/known_hosts -R <VM-IP>` before provi
 
 ## Current state
 
-VM definitions, host setup, HAProxy, and Kubespray configuration are prepared.
-Host installation is blocked by the sudo password prompt. VM boot and cluster
-provisioning have not been verified. Firewall and SSH hardening are still pending.
+Host setup is complete. All four VMs booted and passed Ansible SSH/sudo checks.
+The three Kubernetes nodes can reach the load balancer over the lab network.
+HAProxy is active, its configuration passes validation, and it listens on
+`192.168.56.10:6443`. Re-running its playbook reported zero changes.
+
+Kubernetes has not been installed yet, so API forwarding is not verified.
+Firewall and SSH hardening are still pending.
 
 Local checks passed: ShellCheck, both playbooks' syntax checks, and Kubespray's
 inventory assertions in local check mode. The rendered HAProxy configuration
