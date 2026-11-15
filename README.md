@@ -107,15 +107,18 @@ SSH uses Vagrant's generated private keys and records first-seen host keys in
 `.state/known_hosts`. After intentionally destroying and recreating a VM, remove
 its old host key with `ssh-keygen -f .state/known_hosts -R <VM-IP>` before provisioning.
 
-## Application images
+## Application
 
 ```sh
 bash scripts/build-images.sh
 bash scripts/check-images.sh
+bash scripts/install-metrics.sh
+bash scripts/deploy-app.sh
 ```
 
 See [application settings and checks](docs/application.md) for the endpoints,
-PHP-FPM pool budget, and test results. Helm packaging is next.
+PHP-FPM pool budget, deployment, and test results. The Helm release runs in
+`dpg-app`; ingress and TLS are next.
 
 ## Current state
 

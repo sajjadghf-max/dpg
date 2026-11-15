@@ -21,16 +21,17 @@ Checked items are complete. Runtime results will be recorded only after testing.
 ## Application and delivery
 
 - [x] Build PHP-FPM and NGINX images; justify PHP-FPM pool settings.
-- [ ] Package separate NGINX and PHP-FPM workloads in a Helm chart.
+- [x] Package separate NGINX and PHP-FPM workloads in a Helm chart.
 - [x] Add separate health/readiness endpoints and internal NGINX/PHP-FPM status endpoints.
-- [ ] Add startup/liveness/readiness probes, resource settings, HPA, and PDBs.
-- [ ] Restrict traffic with NetworkPolicies and test allowed/denied paths.
+- [x] Add startup/liveness/readiness probes, resource settings, HPA, and PDBs.
+- [x] Restrict traffic with NetworkPolicies and test allowed/denied paths.
 - [ ] Add ingress and TLS; verify real client IPs through the full proxy chain.
 - [ ] Configure GitOps and CI chart/manifest validation.
 
 ## Observability and exercises
 
-- [ ] Install Prometheus, Grafana, Alertmanager, NGINX and PHP-FPM exporters, and HPA metrics support.
+- [x] Install Metrics Server with verified TLS and confirm HPA resource metrics.
+- [ ] Install Prometheus, Grafana, Alertmanager, and NGINX/PHP-FPM exporters.
 - [ ] Provide request/error rates, latency percentiles, upstream timings, connections, pool saturation, restarts, resource usage, and scaling events.
 - [ ] Protect Grafana with TLS and authentication; export dashboard JSON and screenshots.
 - [ ] Define two SLOs, error budgets, burn-rate/saturation/crash-loop alerts, and a notification receiver.

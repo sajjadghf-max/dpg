@@ -4,6 +4,7 @@ RUN rm /usr/local/etc/php-fpm.d/*.conf
 COPY php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 COPY php.ini /usr/local/etc/php/conf.d/lab.ini
 COPY index.php /var/www/html/index.php
+COPY ready.php /usr/local/bin/ready.php
 USER 82:82
 EXPOSE 9000 9001
 CMD ["php-fpm", "-F"]

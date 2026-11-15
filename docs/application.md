@@ -55,3 +55,42 @@ PHP makes readiness fail while NGINX health stays up; restarting PHP restores
 readiness. The small check used roughly 10–26 MiB for PHP and 2.5 MiB for NGINX.
 These are Docker-network checks; Kubernetes ingress, full client-IP forwarding,
 and load capacity still need testing.
+
+## Kubernetes deployment
+
+After cluster provisioning, install Metrics Server and deploy the chart:
+
+```sh
+bash scripts/install-metrics.sh
+bash scripts/deploy-app.sh
+```
+
+Metrics Server uses the upstream 3.14.0 chart (server 0.9.0), downloaded with a
+pinned SHA-256. Kubelet serving certificates are signed by the cluster CA. The
+approval script accepts only the three inventory node identities and their
+exact DNS/IP names. Re-run it through `install-metrics.sh` for pending renewals.
+TLS verification is enabled both for kubelets and the aggregated Metrics API.
+
+The deployment script builds the images, tags them by image ID, and imports
+them into both workers. The chart uses `imagePullPolicy: Never` for this local
+lab; image publishing will be added with CI. Unchanged image content keeps the
+same tag. Use the dedicated `dpg-app` namespace because its default-deny policy
+covers every pod in that namespace.
+
+Each component starts with two replicas, spread across workers per rollout
+revision. CPU autoscaling targets 70% of requests, with two to three replicas
+and a five-minute downscale stabilization window. Each PDB keeps at least one
+replica available during voluntary evictions. NGINX requests 50m CPU/16 MiB;
+PHP requests 100m CPU/64 MiB. Limits remain 250m/64 MiB and 500m/256 MiB.
+
+Startup and liveness checks are local to each process. PHP readiness sends a
+FastCGI ping; NGINX readiness checks PHP through the Service. Default-deny
+policies allow DNS, NGINX-to-PHP FastCGI, and the Helm test client. Additional
+NGINX sources can be set with `nginx.ingressFrom` when adding the ingress
+controller. No public application endpoint is configured yet.
+
+`helm test app -n dpg-app --logs` checks JSON, health/readiness, allowed traffic,
+and blocked direct PHP/unauthorized NGINX connections. Completed test pods retain
+their logs and are replaced on the next test run. Metrics collection, both HPA
+CPU targets, PDB availability, and cross-worker placement were checked. Scaling
+under load and node-failure recovery remain for the later exercises.

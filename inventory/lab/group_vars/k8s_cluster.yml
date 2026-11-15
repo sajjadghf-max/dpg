@@ -8,6 +8,7 @@ calico_version: "3.31.7"
 
 containerd_use_systemd_cgroup: true
 kubelet_cgroup_driver: systemd
+kubelet_rotate_server_certificates: true
 
 # Use the lab NIC, not Vagrant's NAT management NIC.
 calico_ip_auto_method: "cidr=192.168.56.0/24"

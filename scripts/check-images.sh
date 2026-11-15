@@ -49,6 +49,8 @@ docker exec "$nginx" wget -qO- http://127.0.0.1:8081/nginx-status | grep 'Active
 docker exec "$nginx" wget -qO- http://127.0.0.1:8081/fpm-status | grep 'pool:'
 printf 'PASS: health/readiness and internal status endpoints\n'
 docker exec "$php" php -l /var/www/html/index.php
+docker exec "$php" php -l /usr/local/bin/ready.php
+docker exec "$php" php /usr/local/bin/ready.php
 docker exec "$php" php-fpm -t
 docker exec "$nginx" nginx -t
 docker exec "$php" ps -o pid,rss,args

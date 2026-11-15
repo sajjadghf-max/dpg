@@ -1,0 +1,23 @@
+nginx:
+  image: dpg-nginx:lab
+  replicas: 2
+  resources:
+    requests: {cpu: 50m, memory: 16Mi}
+    limits: {cpu: 250m, memory: 64Mi}
+  # Set to the ingress controller's namespace/pod selectors when adding ingress.
+  ingressFrom: []
+php:
+  image: dpg-php:lab
+  replicas: 2
+  resources:
+    requests: {cpu: 100m, memory: 64Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+imagePullPolicy: Never
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+dnsServers:
+  - 169.254.25.10/32
+  - 10.233.0.3/32

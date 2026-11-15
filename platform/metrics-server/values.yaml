@@ -1,0 +1,9 @@
+apiService:
+  insecureSkipTLSVerify: false
+tls:
+  type: helm
+args:
+  - --kubelet-certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: 200m, memory: 128Mi}

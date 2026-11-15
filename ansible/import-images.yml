@@ -1,0 +1,22 @@
+- name: Import the local application images into the worker runtime
+  hosts: kube_node
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Copy image archive
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/../.state/images/app.tar'
+        dest: /var/tmp/dpg-app-images.tar
+        mode: '0600'
+    - name: Import images in the Kubernetes namespace
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/ctr
+          - --namespace
+          - k8s.io
+          - images
+          - import
+          - --platform
+          - linux/amd64
+          - /var/tmp/dpg-app-images.tar
+      changed_when: true
