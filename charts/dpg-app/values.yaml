@@ -5,7 +5,13 @@ nginx:
     requests: {cpu: 50m, memory: 16Mi}
     limits: {cpu: 250m, memory: 64Mi}
   # Set to the ingress controller's namespace/pod selectors when adding ingress.
-  ingressFrom: []
+  ingressFrom:
+    - namespaceSelector:
+        matchLabels: {kubernetes.io/metadata.name: ingress-system}
+      podSelector:
+        matchLabels: {app.kubernetes.io/name: traefik}
+  # NetworkPolicy restricts peers within this CIDR to the ingress controller.
+  trustedProxyCIDRs: [10.233.64.0/18]
 php:
   image: dpg-php:lab
   replicas: 2
@@ -21,3 +27,8 @@ autoscaling:
 dnsServers:
   - 169.254.25.10/32
   - 10.233.0.3/32
+ingress:
+  enabled: true
+  className: traefik
+  host: app.dpg.test
+  tlsSecret: app-tls

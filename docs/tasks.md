@@ -25,7 +25,7 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Add separate health/readiness endpoints and internal NGINX/PHP-FPM status endpoints.
 - [x] Add startup/liveness/readiness probes, resource settings, HPA, and PDBs.
 - [x] Restrict traffic with NetworkPolicies and test allowed/denied paths.
-- [ ] Add ingress and TLS; verify real client IPs through the full proxy chain.
+- [x] Add ingress and TLS; verify real client IPs through the full proxy chain.
 - [ ] Configure GitOps and CI chart/manifest validation.
 
 ## Observability and exercises

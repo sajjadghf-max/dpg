@@ -21,3 +21,23 @@ backend control_plane
 {% for node in groups['kube_control_plane'] %}
     server {{ node }} {{ hostvars[node].ip }}:6443 check inter 3s fall 3 rise 2
 {% endfor %}
+
+frontend application_http
+    bind {{ ansible_host }}:80
+    default_backend ingress_http
+
+frontend application_https
+    bind {{ ansible_host }}:443
+    default_backend ingress_https
+
+backend ingress_http
+    balance roundrobin
+{% for node in groups['kube_node'] %}
+    server {{ node }} {{ hostvars[node].ip }}:30080 send-proxy-v2 check inter 3s fall 3 rise 2
+{% endfor %}
+
+backend ingress_https
+    balance roundrobin
+{% for node in groups['kube_node'] %}
+    server {{ node }} {{ hostvars[node].ip }}:30443 send-proxy-v2 check inter 3s fall 3 rise 2
+{% endfor %}

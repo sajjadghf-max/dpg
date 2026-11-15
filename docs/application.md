@@ -2,8 +2,8 @@
 
 The app returns JSON with its service name and client IP. It has no database or
 external dependencies. PHP reads `REMOTE_ADDR` supplied by NGINX; it does not
-parse client-supplied forwarding headers. Trusted ingress proxies will be
-configured with the Helm deployment, then tested through the full LB path.
+parse client-supplied forwarding headers. Trusted ingress proxies are configured
+in the Helm chart and tested through the full LB path; see [ingress](ingress.md).
 
 Build and check locally with Docker:
 
@@ -53,8 +53,8 @@ Configuration syntax, JSON responses, ignored spoofed forwarding headers,
 internal status endpoints, and public status-path blocking passed. Stopping
 PHP makes readiness fail while NGINX health stays up; restarting PHP restores
 readiness. The small check used roughly 10–26 MiB for PHP and 2.5 MiB for NGINX.
-These are Docker-network checks; Kubernetes ingress, full client-IP forwarding,
-and load capacity still need testing.
+These are Docker-network checks. Ingress checks are documented separately;
+load capacity still needs measurement.
 
 ## Kubernetes deployment
 
@@ -86,8 +86,8 @@ PHP requests 100m CPU/64 MiB. Limits remain 250m/64 MiB and 500m/256 MiB.
 Startup and liveness checks are local to each process. PHP readiness sends a
 FastCGI ping; NGINX readiness checks PHP through the Service. Default-deny
 policies allow DNS, NGINX-to-PHP FastCGI, and the Helm test client. Additional
-NGINX sources can be set with `nginx.ingressFrom` when adding the ingress
-controller. No public application endpoint is configured yet.
+NGINX sources are set with `nginx.ingressFrom` for the ingress controller.
+The public endpoint is described in [ingress and TLS](ingress.md).
 
 `helm test app -n dpg-app --logs` checks JSON, health/readiness, allowed traffic,
 and blocked direct PHP/unauthorized NGINX connections. Completed test pods retain

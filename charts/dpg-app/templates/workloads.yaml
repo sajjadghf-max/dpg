@@ -19,6 +19,10 @@ spec:
       app.kubernetes.io/component: {{ $component }}
   template:
     metadata:
+      {{- if eq $component "nginx" }}
+      annotations:
+        checksum/proxies: {{ include (print $.Template.BasePath "/trusted-proxies.yaml") $ | sha256sum }}
+      {{- end }}
       labels:
         app.kubernetes.io/instance: {{ $.Release.Name }}
         app.kubernetes.io/component: {{ $component }}
@@ -87,9 +91,20 @@ spec:
           {{- end }}
           volumeMounts:
             - {name: tmp, mountPath: /tmp}
+            {{- if eq $component "nginx" }}
+            - name: trusted-proxies
+              mountPath: /etc/nginx/trusted-proxies.conf
+              subPath: trusted-proxies.conf
+              readOnly: true
+            {{- end }}
       volumes:
         - name: tmp
           emptyDir: {sizeLimit: 16Mi}
+        {{- if eq $component "nginx" }}
+        - name: trusted-proxies
+          configMap:
+            name: {{ $.Release.Name }}-trusted-proxies
+        {{- end }}
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget

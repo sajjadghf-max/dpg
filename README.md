@@ -83,7 +83,7 @@ versions. Kubespray handles swap, kernel/network prerequisites, and systemd
 cgroup alignment. Calico uses VXLAN on the lab network.
 
 HAProxy forwards API traffic at `192.168.56.10:6443` to `cp1`; TLS terminates at
-the API server. Application HTTP/HTTPS forwarding will be added with ingress.
+the API server. It also forwards application HTTP/HTTPS to Traefik on the workers.
 
 The generated admin kubeconfig and matching kubectl binary stay under the
 Git-ignored `.state/artifacts/` directory:
@@ -118,7 +118,14 @@ bash scripts/deploy-app.sh
 
 See [application settings and checks](docs/application.md) for the endpoints,
 PHP-FPM pool budget, deployment, and test results. The Helm release runs in
-`dpg-app`; ingress and TLS are next.
+`dpg-app`. Install and check ingress with:
+
+```sh
+bash scripts/install-ingress.sh
+bash scripts/check-ingress.sh
+```
+
+See [ingress and TLS](docs/ingress.md) for the local HTTPS command and client-IP path.
 
 ## Current state
 

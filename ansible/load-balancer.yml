@@ -1,4 +1,4 @@
-- name: Configure the Kubernetes API load balancer
+- name: Configure the API and application load balancer
   hosts: load_balancer
   become: true
   gather_facts: false
@@ -10,7 +10,7 @@
         update_cache: true
         cache_valid_time: 3600
 
-    - name: Configure API TCP forwarding
+    - name: Configure TCP forwarding
       ansible.builtin.template:
         src: templates/haproxy.cfg.j2
         dest: /etc/haproxy/haproxy.cfg

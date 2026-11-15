@@ -1,0 +1,63 @@
+image:
+  registry: docker.io
+  repository: library/traefik
+  tag: v3.7.18
+  digest: sha256:9c437ac4f09ce6f4980a8544902d3475fdf70a1a7c578729581d2535dfa7d635
+deployment:
+  replicas: 2
+  revisionHistoryLimit: 2
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+ingressClass:
+  name: traefik
+  isDefaultClass: false
+providers:
+  kubernetesCRD:
+    enabled: false
+  kubernetesIngress:
+    enabled: true
+  kubernetesGateway:
+    enabled: false
+gateway:
+  enabled: false
+gatewayClass:
+  enabled: false
+api:
+  dashboard: false
+ingressRoute:
+  dashboard:
+    enabled: false
+global:
+  checkNewVersion: false
+service:
+  spec:
+    type: NodePort
+    externalTrafficPolicy: Local
+ports:
+  web:
+    nodePort: 30080
+    proxyProtocol:
+      trustedIPs: [192.168.56.10/32]
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    nodePort: 30443
+    proxyProtocol:
+      trustedIPs: [192.168.56.10/32]
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: 300m, memory: 128Mi}
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: DoNotSchedule
+    nodeTaintsPolicy: Honor
+    matchLabelKeys: [pod-template-hash]
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: traefik
