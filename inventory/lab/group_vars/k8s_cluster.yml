@@ -29,3 +29,21 @@ kubeconfig_localhost: true
 kubectl_localhost: true
 artifacts_dir: "{{ inventory_dir }}/../../.state/artifacts"
 credentials_dir: "{{ inventory_dir }}/../../.state/credentials"
+
+containerd_registries_mirrors:
+  - prefix: registry.k8s.io
+    mirrors:
+      - host: https://mirror-k8s.runflare.com
+        capabilities: [pull, resolve]
+  - prefix: quay.io
+    mirrors:
+      - host: https://quay.hamdocker.ir
+        capabilities: [pull, resolve]
+  - prefix: docker.io
+    mirrors:
+      - host: https://docker.arvancloud.ir
+        capabilities: [pull, resolve]
+      - host: https://registry-1.docker.io
+        capabilities: [pull, resolve]
+
+additional_no_proxy: ".runflare.com,.hamdocker.ir,.arvancloud.ir"
