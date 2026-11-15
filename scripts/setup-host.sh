@@ -24,7 +24,7 @@ trap 'rm -rf -- "$download_dir"' EXIT
 sudo -v
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
-  ca-certificates curl git python3 openssh-client \
+  ca-certificates curl git python3 python3-venv openssh-client \
   qemu-system-x86 qemu-utils libvirt-daemon-system libvirt-clients dnsmasq-base \
   build-essential pkg-config libvirt-dev ruby-dev libxml2-dev libxslt1-dev zlib1g-dev
 

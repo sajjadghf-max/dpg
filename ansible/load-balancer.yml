@@ -1,0 +1,33 @@
+- name: Configure the Kubernetes API load balancer
+  hosts: load_balancer
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Install HAProxy
+      ansible.builtin.apt:
+        name: haproxy
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Configure API TCP forwarding
+      ansible.builtin.template:
+        src: templates/haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+        owner: root
+        group: root
+        mode: "0644"
+        validate: /usr/sbin/haproxy -c -f %s
+      notify: Reload HAProxy
+
+    - name: Enable HAProxy
+      ansible.builtin.service:
+        name: haproxy
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Reload HAProxy
+      ansible.builtin.service:
+        name: haproxy
+        state: reloaded

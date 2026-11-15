@@ -1,0 +1,31 @@
+# Versions supported by the pinned Kubespray v2.32.0 release.
+kube_version: "1.36.4"
+container_manager: containerd
+containerd_version: "2.3.5"
+etcd_version: "3.6.14"
+kube_network_plugin: calico
+calico_version: "3.31.7"
+
+containerd_use_systemd_cgroup: true
+kubelet_cgroup_driver: systemd
+
+# Use the lab NIC, not Vagrant's NAT management NIC.
+calico_ip_auto_method: "cidr=192.168.56.0/24"
+calico_network_backend: vxlan
+calico_ipip_mode: Never
+calico_vxlan_mode: Always
+kube_pods_subnet: 10.233.64.0/18
+kube_service_addresses: 10.233.0.0/18
+
+loadbalancer_apiserver_localhost: false
+loadbalancer_apiserver:
+  address: 192.168.56.10
+  port: 6443
+apiserver_loadbalancer_domain_name: 192.168.56.10
+supplementary_addresses_in_ssl_keys:
+  - 192.168.56.10
+
+kubeconfig_localhost: true
+kubectl_localhost: true
+artifacts_dir: "{{ inventory_dir }}/../../.state/artifacts"
+credentials_dir: "{{ inventory_dir }}/../../.state/credentials"

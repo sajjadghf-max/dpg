@@ -1,2 +1,5 @@
 .vagrant/
+.venv/
+.state/
+vendor/
 

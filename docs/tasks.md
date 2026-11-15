@@ -10,10 +10,11 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Allocate 8.5 GiB RAM; choose 192.168.56.0/24 for the lab and 192.168.121.0/24 for management (no current route overlap).
 - [x] Add host setup and four VM definitions; pin Vagrant, its libvirt plugin, and the Ubuntu box.
 - [ ] Run host setup and verify all four VMs boot and accept SSH.
-- [ ] Pin Kubespray, Kubernetes, containerd, and CNI versions.
+- [x] Pin Kubespray, Kubernetes, containerd, etcd, and Calico versions.
+- [x] Add Kubespray inventory, API HAProxy playbook, and provisioning commands.
 - [ ] Automate VM creation and Kubernetes provisioning, including swap, kernel, sysctl, and cgroups.
 - [ ] Configure HAProxy, firewall rules, SSH restrictions, and unused-service hardening.
-- [ ] Resolve the Keepalived requirement for the agreed single-LB topology; document the limitation.
+- [x] Omit Keepalived as agreed; document the departure and single-LB limitation.
 - [ ] Verify clean bring-up, repeated provisioning, DNS, and cross-node networking.
 
 ## Application and delivery

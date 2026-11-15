@@ -1,0 +1,23 @@
+global
+    log /dev/log local0
+    user haproxy
+    group haproxy
+    daemon
+
+defaults
+    log global
+    mode tcp
+    option tcplog
+    timeout connect 5s
+    timeout client 1h
+    timeout server 1h
+
+frontend kubernetes_api
+    bind {{ ansible_host }}:6443
+    default_backend control_plane
+
+backend control_plane
+    balance roundrobin
+{% for node in groups['kube_control_plane'] %}
+    server {{ node }} {{ hostvars[node].ip }}:6443 check inter 3s fall 3 rise 2
+{% endfor %}

@@ -16,9 +16,10 @@ See the [upstream explanation](https://github.com/kubernetes-sigs/kubespray/blob
 ## Limits
 
 This is a small lab on one physical host. The load balancer, control plane, and
-etcd each have a single instance. Keepalived alone cannot provide failover without
-a second load balancer. We can test application recovery, but cannot claim
-control-plane or load-balancer HA.
+etcd each have a single instance. Keepalived is deliberately omitted because
+there is no second load balancer. This departs from the brief's Keepalived
+requirement. We can test application recovery, but cannot claim control-plane
+or load-balancer HA.
 
 ## Host setup
 
@@ -63,9 +64,48 @@ the host routes checked during setup. Check again if VPN routes change.
 
 Use `vagrant halt` to stop the VMs and release their memory.
 
+## Provision Kubernetes
+
+Once all four VMs are running:
+
+```sh
+bash scripts/provision-cluster.sh
+```
+
+This checks SSH access, configures HAProxy, runs Kubespray, and checks API,
+node, Calico, and CoreDNS readiness. Re-run the same command after an interrupted
+provisioning attempt.
+
+Kubespray is pinned to v2.32.0, commit
+`9751ea6f63244e433a7a6263d9ecf381e57bb8e9`. The inventory pins Kubernetes 1.36.4,
+containerd 2.3.5, etcd 3.6.14, and Calico 3.31.7 from that release's supported
+versions. Kubespray handles swap, kernel/network prerequisites, and systemd
+cgroup alignment. Calico uses VXLAN on the lab network.
+
+HAProxy forwards API traffic at `192.168.56.10:6443` to `cp1`; TLS terminates at
+the API server. Application HTTP/HTTPS forwarding will be added with ingress.
+
+The generated admin kubeconfig and matching kubectl binary stay under the
+Git-ignored `.state/artifacts/` directory:
+
+```sh
+export KUBECONFIG="$PWD/.state/artifacts/admin.conf"
+.state/artifacts/kubectl get nodes -o wide
+```
+
+SSH uses Vagrant's generated private keys and records first-seen host keys in
+`.state/known_hosts`. After intentionally destroying and recreating a VM, remove
+its old host key with `ssh-keygen -f .state/known_hosts -R <VM-IP>` before provisioning.
+
 ## Current state
 
-VM definitions and host setup are prepared. Host installation and VM boot have
-not been verified yet. Kubernetes and HAProxy provisioning come next.
+VM definitions, host setup, HAProxy, and Kubespray configuration are prepared.
+Host installation is blocked by the sudo password prompt. VM boot and cluster
+provisioning have not been verified. Firewall and SSH hardening are still pending.
+
+Local checks passed: ShellCheck, both playbooks' syntax checks, and Kubespray's
+inventory assertions in local check mode. The rendered HAProxy configuration
+passed a local syntax check using existing host accounts in place of the guest's
+haproxy account. These checks do not establish that a cluster is running.
 
 Remaining work is tracked in [docs/tasks.md](docs/tasks.md).
