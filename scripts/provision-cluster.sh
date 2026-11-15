@@ -14,8 +14,8 @@ inventory=inventory/lab/hosts.yml
 
 # Check guest access before changing any VM. Vagrant supplies the SSH keys.
 .venv/bin/ansible -i "$inventory" all --become -m ansible.builtin.ping
-.venv/bin/ansible-playbook -i "$inventory" ansible/load-balancer.yml
-.venv/bin/ansible-playbook -i "$inventory" --become --limit k8s_cluster \
+.venv/bin/ansible-playbook -vvv -i "$inventory" ansible/load-balancer.yml
+.venv/bin/ansible-playbook -vvv -i "$inventory" --become --limit k8s_cluster \
   vendor/kubespray/cluster.yml
 
 export KUBECONFIG="$project_dir/.state/artifacts/admin.conf"
