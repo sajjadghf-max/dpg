@@ -34,14 +34,20 @@ CERT
 fi
 "$kubectl" -n dpg-app create secret tls app-tls --cert=.state/tls/app.crt \
   --key=.state/tls/app.key --dry-run=client -o yaml | "$kubectl" apply -f -
+monitoring_args=()
+if "$kubectl" get prometheus monitoring-kube-prometheus-prometheus -n monitoring >/dev/null 2>&1; then
+  monitoring_args+=(--values platform/monitoring/traefik-values.yaml)
+fi
 helm upgrade --install traefik "$chart" --namespace ingress-system --create-namespace \
-  --values platform/traefik/values.yaml --skip-crds --wait --timeout 180s
+  --values platform/traefik/values.yaml "${monitoring_args[@]}" --skip-crds --wait --timeout 180s
 "$kubectl" apply -f platform/traefik/networkpolicy.yaml
 # Keep the content-based image tags while loading the chart's new defaults.
 helm get values app --namespace dpg-app -o json | python3 -c '
 import json,sys
 v=json.load(sys.stdin)
-print(json.dumps({k:{"image":v[k]["image"]} for k in ("php","nginx")}))
+result={k:{"image":v[k]["image"]} for k in ("php","nginx")}
+result["monitoring"]={"enabled":v.get("monitoring",{}).get("enabled",False)}
+print(json.dumps(result))
 ' > .state/app-images.json
 helm upgrade app charts/dpg-app --namespace dpg-app --reset-values \
   --values .state/app-images.json --wait --timeout 180s

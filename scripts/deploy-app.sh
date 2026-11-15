@@ -19,6 +19,9 @@ for component in php nginx; do
 done
 docker image save --platform linux/amd64 --output .state/images/app.tar "${images[@]}"
 .venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/import-images.yml
+if .state/artifacts/kubectl get prometheus monitoring-kube-prometheus-prometheus -n monitoring >/dev/null 2>&1; then
+  image_settings+=(--set monitoring.enabled=true)
+fi
 helm upgrade --install app charts/dpg-app --namespace dpg-app --create-namespace \
   "${image_settings[@]}" --wait --timeout 180s
 helm test app --namespace dpg-app --logs --timeout 120s

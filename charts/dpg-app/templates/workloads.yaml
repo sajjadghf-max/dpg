@@ -97,6 +97,28 @@ spec:
               subPath: trusted-proxies.conf
               readOnly: true
             {{- end }}
+        {{- if $.Values.monitoring.enabled }}
+        {{- $exporter := index $.Values.monitoring.exporters $component }}
+        - name: exporter
+          image: {{ $exporter.image | quote }}
+          imagePullPolicy: IfNotPresent
+          args: {{ $exporter.args | toJson }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          ports:
+            - {name: metrics, containerPort: {{ $exporter.port }}}
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          readinessProbe:
+            httpGet: {path: /metrics, port: metrics}
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: {path: /metrics, port: metrics}
+            timeoutSeconds: 3
+        {{- end }}
       volumes:
         - name: tmp
           emptyDir: {sizeLimit: 16Mi}

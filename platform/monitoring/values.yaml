@@ -1,0 +1,91 @@
+# One replica, no PVCs: this lab intentionally loses local data on pod replacement.
+defaultRules:
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    kubeProxy: false
+kubeEtcd: {enabled: false}
+kubeControllerManager: {enabled: false}
+kubeScheduler: {enabled: false}
+kubeProxy: {enabled: false}
+kubelet:
+  serviceMonitor:
+    interval: 30s
+    cAdvisorInterval: 30s
+    tlsConfig:
+      insecureSkipVerify: false
+prometheusOperator:
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {cpu: 300m, memory: 192Mi}
+  prometheusConfigReloader:
+    resources:
+      requests: {cpu: 10m, memory: 16Mi}
+      limits: {cpu: 100m, memory: 64Mi}
+  admissionWebhooks:
+    patch:
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {cpu: 100m, memory: 64Mi}
+prometheus:
+  prometheusSpec:
+    replicas: 1
+    retention: 24h
+    retentionSize: 1GB
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    resources:
+      requests: {cpu: 100m, memory: 256Mi}
+      limits: {cpu: 750m, memory: 768Mi}
+    storageSpec:
+      emptyDir: {sizeLimit: 2Gi}
+alertmanager:
+  alertmanagerSpec:
+    replicas: 1
+    resources:
+      requests: {cpu: 10m, memory: 32Mi}
+      limits: {cpu: 100m, memory: 96Mi}
+    storage:
+      emptyDir: {sizeLimit: 64Mi}
+grafana:
+  replicas: 1
+  admin:
+    existingSecret: grafana-admin
+  persistence: {enabled: false}
+  resources:
+    requests: {cpu: 50m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+  sidecar:
+    resources:
+      requests: {cpu: 10m, memory: 64Mi}
+      limits: {cpu: 100m, memory: 192Mi}
+  grafana.ini:
+    server:
+      domain: grafana.dpg.test
+      root_url: https://grafana.dpg.test
+    security:
+      cookie_secure: true
+    users:
+      allow_sign_up: false
+    auth.anonymous:
+      enabled: false
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [grafana.dpg.test]
+    tls:
+      - secretName: grafana-tls
+        hosts: [grafana.dpg.test]
+kube-state-metrics:
+  resources:
+    requests: {cpu: 20m, memory: 32Mi}
+    limits: {cpu: 200m, memory: 96Mi}
+prometheus-node-exporter:
+  resources:
+    requests: {cpu: 20m, memory: 24Mi}
+    limits: {cpu: 200m, memory: 64Mi}

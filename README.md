@@ -127,6 +127,16 @@ bash scripts/check-ingress.sh
 
 See [ingress and TLS](docs/ingress.md) for the local HTTPS command and client-IP path.
 
+## Monitoring
+
+```sh
+bash scripts/install-monitoring.sh
+bash scripts/check-monitoring.sh
+```
+
+See [monitoring](docs/monitoring.md) for Grafana access, credentials, storage limits,
+and scrape coverage. This phase uses ephemeral storage to fit the local lab.
+
 ## Current state
 
 Host setup is complete. All four VMs booted and passed Ansible SSH/sudo checks.

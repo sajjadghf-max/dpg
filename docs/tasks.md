@@ -31,9 +31,10 @@ Checked items are complete. Runtime results will be recorded only after testing.
 ## Observability and exercises
 
 - [x] Install Metrics Server with verified TLS and confirm HPA resource metrics.
-- [ ] Install Prometheus, Grafana, Alertmanager, and NGINX/PHP-FPM exporters.
+- [x] Install Prometheus, Grafana, Alertmanager, and NGINX/PHP-FPM exporters.
 - [ ] Provide request/error rates, latency percentiles, upstream timings, connections, pool saturation, restarts, resource usage, and scaling events.
-- [ ] Protect Grafana with TLS and authentication; export dashboard JSON and screenshots.
+- [x] Protect Grafana with TLS and authentication.
+- [ ] Export dashboard JSON and screenshots.
 - [ ] Define two SLOs, error budgets, burn-rate/saturation/crash-loop alerts, and a notification receiver.
 - [ ] Run two failure scenarios and record detection, recovery, and SLO impact.
 - [ ] Write a postmortem for each, with timeline, cause, impact, owners, and follow-up dates.

@@ -32,3 +32,15 @@ ingress:
   className: traefik
   host: app.dpg.test
   tlsSecret: app-tls
+monitoring:
+  enabled: false
+  release: monitoring
+  exporters:
+    nginx:
+      image: docker.io/nginx/nginx-prometheus-exporter@sha256:85666e7fde7e253f1c6d978f9a961245df4c9cdb7677e1866d9bb28e8f9ee41d
+      port: 9113
+      args: [--nginx.scrape-uri=http://127.0.0.1:8081/nginx-status]
+    php:
+      image: docker.io/hipages/php-fpm_exporter@sha256:9b5be9d3d9551e5f0155988dd799c55d6a5c08d1ce47218fccd1b030cfdd3447
+      port: 9253
+      args: [server, --phpfpm.scrape-uri=tcp://127.0.0.1:9001/fpm-status]
