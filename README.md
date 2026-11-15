@@ -164,3 +164,9 @@ bash scripts/test-slo-rules.sh
 
 Open **Digipay application** in Grafana (`/d/dpg-application`).
 See [SLO targets and alert delivery](docs/alerting.md).
+
+### Failure exercises
+
+See [the two bounded lab exercises](docs/failure-exercises.md) and their measured
+postmortems. They deliberately disrupt this lab; do not run them concurrently
+or during deployment.

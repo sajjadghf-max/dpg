@@ -36,13 +36,13 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Protect Grafana with TLS and authentication.
 - [x] Export dashboard JSON and screenshots.
 - [x] Define two SLOs, error budgets, burn-rate/saturation/crash-loop alerts, and a notification receiver.
-- [ ] Run two failure scenarios and record detection, recovery, and SLO impact.
-- [ ] Write a postmortem for each, with timeline, cause, impact, owners, and follow-up dates.
+- [x] Run two failure scenarios and record detection, recovery, and SLO impact.
+- [x] Write a postmortem for each, with timeline, cause, impact, owners, and follow-up dates.
 
 ## Operational handover
 
 - [ ] Write the alerting strategy, runbook, architecture diagram, and walkthrough.
-- [ ] Draft the one-page stakeholder summary and four-stage status updates.
+- [x] Draft the one-page stakeholder summary and four-stage status updates.
 - [ ] Document on-call rotation, escalation, and handover.
 - [ ] Measure capacity for 3x traffic; document scaling and cost trade-offs.
 - [ ] Document security, secrets, payments data handling, and etcd/application backup and recovery.

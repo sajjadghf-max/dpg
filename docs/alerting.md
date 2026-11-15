@@ -84,7 +84,7 @@ and alert queries currently use the configured ceiling of four.
 
 The burn logic follows the [multiwindow approach in the SRE Workbook](https://sre.google/workbook/alerting-on-slos/).
 Webhook routing uses [Alertmanager's supported configuration](https://prometheus.io/docs/alerting/latest/configuration/).
-Failure exercises and measured incident impact are the next phase.
+See [failure exercises](failure-exercises.md) for measured incident impact and postmortems.
 
 ## Verified in the lab
 
