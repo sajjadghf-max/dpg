@@ -37,8 +37,12 @@ CERT
 fi
 "$kubectl" -n monitoring create secret tls grafana-tls --cert=.state/tls/grafana.crt \
   --key=.state/tls/grafana.key --dry-run=client -o yaml | "$kubectl" apply -f -
+alerting_values=()
+if helm status dpg-observability --namespace monitoring >/dev/null 2>&1; then
+  alerting_values=(--values platform/monitoring/alerting-values.yaml)
+fi
 helm upgrade --install monitoring "$chart" --namespace monitoring \
-  --values platform/monitoring/values.yaml --wait --timeout 1200s
+  --values platform/monitoring/values.yaml "${alerting_values[@]}" --wait --timeout 1200s
 "$kubectl" -n monitoring rollout status statefulset/prometheus-monitoring-kube-prometheus-prometheus --timeout=180s
 "$kubectl" -n monitoring rollout status statefulset/alertmanager-monitoring-kube-prometheus-alertmanager --timeout=180s
 helm upgrade traefik .state/charts/traefik-42.4.0.tgz --namespace ingress-system \

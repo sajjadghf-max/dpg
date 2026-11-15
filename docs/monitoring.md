@@ -58,9 +58,22 @@ It verifies Grafana's certificate, rejects anonymous API access, and tests the
 admin login without placing the password in process arguments. It also repeats
 the application HTTPS/client-IP checks and Helm network tests.
 
-Custom dashboards, SLO rules, notification delivery, and failure exercises are
-separate remaining steps. The stack includes its upstream Kubernetes dashboards
-and default rules; Alertmanager currently uses the chart's null receiver.
+The provisioned **Digipay application** dashboard is at `/d/dpg-application`.
+Its [JSON export](../charts/dpg-observability/files/dashboard.json) stays in Git.
+It covers requests, 4xx/5xx rates, p50/p95/p99 and mean upstream latency,
+NGINX connections, PHP busy/idle workers and queue, restarts, CPU/memory, HPA
+replicas and observed replica changes, SLIs, and remaining budgets. Replica
+changes are sampled metrics, not a durable Kubernetes Events archive.
+
+Screenshots from the running lab:
+[requests](screenshots/dashboard-requests.png),
+[pool](screenshots/dashboard-pool.png),
+[resources](screenshots/dashboard-resources.png), and
+[SLOs](screenshots/dashboard-slo.png).
+
+See [SLOs and alert delivery](alerting.md) for targets, limitations, rules,
+and verification commands. The stack also keeps its upstream Kubernetes
+dashboards and default rules. Failure exercises remain a separate step.
 
 Verified on 2026-11-15: all 28 scrape targets were healthy, including both NGINX
 exporters, both PHP-FPM exporters, both Traefik replicas, and nine kubelet

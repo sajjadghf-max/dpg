@@ -1,0 +1,162 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: dpg-slo
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: dpg.slo
+    interval: 30s
+    rules:
+    - record: dpg:slo_bad_ratio:1m
+      labels:
+        slo: availability
+      expr: (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code=~"5.."}[1m]))
+        or (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[1m]))
+        * 0)) / (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[1m]))
+        > 0)
+    - record: dpg:slo_bad_ratio:1m
+      labels:
+        slo: latency
+      expr: 1 - sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[1m]))
+        / (sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="+Inf"}[1m])
+        and ignoring(le) rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[1m]))
+        > 0)
+    - record: dpg:slo_bad_ratio:5m
+      labels:
+        slo: availability
+      expr: (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code=~"5.."}[5m]))
+        or (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[5m]))
+        * 0)) / (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[5m]))
+        > 0)
+    - record: dpg:slo_bad_ratio:5m
+      labels:
+        slo: latency
+      expr: 1 - sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[5m]))
+        / (sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="+Inf"}[5m])
+        and ignoring(le) rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[5m]))
+        > 0)
+    - record: dpg:slo_bad_ratio:10m
+      labels:
+        slo: availability
+      expr: (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code=~"5.."}[10m]))
+        or (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[10m]))
+        * 0)) / (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[10m]))
+        > 0)
+    - record: dpg:slo_bad_ratio:10m
+      labels:
+        slo: latency
+      expr: 1 - sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[10m]))
+        / (sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="+Inf"}[10m])
+        and ignoring(le) rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[10m]))
+        > 0)
+    - record: dpg:slo_bad_ratio:1h
+      labels:
+        slo: availability
+      expr: (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code=~"5.."}[1h]))
+        or (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[1h]))
+        * 0)) / (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[1h]))
+        > 0)
+    - record: dpg:slo_bad_ratio:1h
+      labels:
+        slo: latency
+      expr: 1 - sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[1h]))
+        / (sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="+Inf"}[1h])
+        and ignoring(le) rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[1h]))
+        > 0)
+    - record: dpg:slo_bad_ratio:24h
+      labels:
+        slo: availability
+      expr: (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code=~"5.."}[24h]))
+        or (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[24h]))
+        * 0)) / (sum(rate(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[24h]))
+        > 0)
+    - record: dpg:slo_bad_ratio:24h
+      labels:
+        slo: latency
+      expr: 1 - sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[24h]))
+        / (sum(rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="+Inf"}[24h])
+        and ignoring(le) rate(traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}[24h]))
+        > 0)
+    - record: dpg:slo_budget_remaining:ratio
+      labels:
+        slo: availability
+      expr: 1 - dpg:slo_bad_ratio:24h{slo="availability"} / 0.001
+    - alert: DpgAvailabilityBurnFast
+      expr: (dpg:slo_bad_ratio:10m{slo="availability"} / 0.001 > 6) and (dpg:slo_bad_ratio:1m{slo="availability"}
+        / 0.001 > 6) and on() (sum(increase(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[10m]))
+        >= 20)
+      for: 1m
+      labels:
+        severity: critical
+        scope: dpg
+        slo: availability
+      annotations:
+        summary: Availability error budget is burning too quickly
+        description: 6x burn in both 10m and 1m; at least 20 requests in 10m. See
+          docs/alerting.md.
+    - alert: DpgAvailabilityBurnSlow
+      expr: (dpg:slo_bad_ratio:1h{slo="availability"} / 0.001 > 3) and (dpg:slo_bad_ratio:5m{slo="availability"}
+        / 0.001 > 3) and on() (sum(increase(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[1h]))
+        >= 20)
+      for: 1m
+      labels:
+        severity: warning
+        scope: dpg
+        slo: availability
+      annotations:
+        summary: Availability error budget is burning too quickly
+        description: 3x burn in both 1h and 5m; at least 20 requests in 1h. See docs/alerting.md.
+    - record: dpg:slo_budget_remaining:ratio
+      labels:
+        slo: latency
+      expr: 1 - dpg:slo_bad_ratio:24h{slo="latency"} / 0.01
+    - alert: DpgLatencyBurnFast
+      expr: (dpg:slo_bad_ratio:10m{slo="latency"} / 0.01 > 6) and (dpg:slo_bad_ratio:1m{slo="latency"}
+        / 0.01 > 6) and on() (sum(increase(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[10m]))
+        >= 20)
+      for: 1m
+      labels:
+        severity: critical
+        scope: dpg
+        slo: latency
+      annotations:
+        summary: Latency error budget is burning too quickly
+        description: 6x burn in both 10m and 1m; at least 20 requests in 10m. See
+          docs/alerting.md.
+    - alert: DpgLatencyBurnSlow
+      expr: (dpg:slo_bad_ratio:1h{slo="latency"} / 0.01 > 3) and (dpg:slo_bad_ratio:5m{slo="latency"}
+        / 0.01 > 3) and on() (sum(increase(traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes"}[1h]))
+        >= 20)
+      for: 1m
+      labels:
+        severity: warning
+        scope: dpg
+        slo: latency
+      annotations:
+        summary: Latency error budget is burning too quickly
+        description: 3x burn in both 1h and 5m; at least 20 requests in 1h. See docs/alerting.md.
+    - alert: DpgPhpFpmSaturated
+      expr: phpfpm_active_processes{namespace="dpg-app"} / 4 >= 0.9 or phpfpm_listen_queue{namespace="dpg-app"}
+        > 0
+      for: 2m
+      labels:
+        severity: warning
+        scope: dpg
+      annotations:
+        summary: PHP-FPM is at its four-worker limit or has queued requests
+        description: Inspect per-pod pool, CPU, slow requests, and downstream timings
+          before scaling.
+    - alert: DpgAppCrashLoop
+      expr: max_over_time(kube_pod_container_status_waiting_reason{namespace="dpg-app",reason="CrashLoopBackOff"}[5m])
+        == 1
+      for: 2m
+      labels:
+        severity: critical
+        scope: dpg
+      annotations:
+        summary: An application container is crash-looping
+        description: Inspect previous container logs, termination reason, resource
+          limits, and recent changes.

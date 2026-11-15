@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dpg-alert-receiver
+data:
+  receiver.php: |
+{{ .Files.Get "files/receiver.php" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dpg-alert-receiver
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: dpg-alert-receiver}
+  template:
+    metadata:
+      labels: {app: dpg-alert-receiver}
+      annotations:
+        checksum/code: {{ .Files.Get "files/receiver.php" | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 82
+        runAsGroup: 82
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: receiver
+          image: {{ required "Set receiver.image to the imported PHP image" .Values.receiver.image | quote }}
+          imagePullPolicy: Never
+          command: [php, -S, '0.0.0.0:8080', /receiver/receiver.php]
+          ports:
+            - {name: http, containerPort: 8080}
+          resources:
+            requests: {cpu: 5m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 48Mi}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+          volumeMounts:
+            - {name: code, mountPath: /receiver, readOnly: true}
+      volumes:
+        - name: code
+          configMap: {name: dpg-alert-receiver}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dpg-alert-receiver
+spec:
+  selector: {app: dpg-alert-receiver}
+  ports:
+    - {name: http, port: 8080, targetPort: http}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dpg-alert-receiver
+spec:
+  podSelector:
+    matchLabels: {app: dpg-alert-receiver}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: alertmanager
+      ports:
+        - {protocol: TCP, port: 8080}
+  egress: []

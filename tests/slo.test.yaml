@@ -1,0 +1,140 @@
+rule_files:
+- rules.yaml
+evaluation_interval: 30s
+tests:
+- name: healthy
+  interval: 30s
+  input_series:
+  - series: traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code="200"}
+    values: 0+100x40
+  - series: traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="+Inf"}
+    values: 0+100x40
+  - series: traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}
+    values: 0+100x40
+  alert_rule_test:
+  - eval_time: 15m
+    alertname: DpgAvailabilityBurnFast
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: DpgAvailabilityBurnSlow
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: DpgLatencyBurnFast
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: DpgLatencyBurnSlow
+    exp_alerts: []
+  promql_expr_test:
+  - expr: dpg:slo_bad_ratio:5m
+    eval_time: 15m
+    exp_samples:
+    - labels: dpg:slo_bad_ratio:5m{slo="availability"}
+      value: 0
+    - labels: dpg:slo_bad_ratio:5m{slo="latency"}
+      value: 0
+- name: burning
+  interval: 30s
+  input_series:
+  - series: traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code="200"}
+    values: 0+99x40
+  - series: traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code="500"}
+    values: 0+1x40
+  - series: traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="+Inf"}
+    values: 0+100x40
+  - series: traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}
+    values: 0+90x40
+  alert_rule_test:
+  - eval_time: 15m
+    alertname: DpgAvailabilityBurnFast
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        scope: dpg
+        slo: availability
+      exp_annotations:
+        summary: Availability error budget is burning too quickly
+        description: 6x burn in both 10m and 1m; at least 20 requests in 10m. See
+          docs/alerting.md.
+  - eval_time: 15m
+    alertname: DpgAvailabilityBurnSlow
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        scope: dpg
+        slo: availability
+      exp_annotations:
+        summary: Availability error budget is burning too quickly
+        description: 3x burn in both 1h and 5m; at least 20 requests in 1h. See docs/alerting.md.
+  - eval_time: 15m
+    alertname: DpgLatencyBurnFast
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        scope: dpg
+        slo: latency
+      exp_annotations:
+        summary: Latency error budget is burning too quickly
+        description: 6x burn in both 10m and 1m; at least 20 requests in 10m. See
+          docs/alerting.md.
+  - eval_time: 15m
+    alertname: DpgLatencyBurnSlow
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        scope: dpg
+        slo: latency
+      exp_annotations:
+        summary: Latency error budget is burning too quickly
+        description: 3x burn in both 1h and 5m; at least 20 requests in 1h. See docs/alerting.md.
+- name: low-traffic
+  interval: 30s
+  input_series:
+  - series: traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code="200"}
+    values: 0+0x40
+  - series: traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code="500"}
+    values: 0+0.1x40
+  - series: traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="+Inf"}
+    values: 0+0.1x40
+  - series: traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}
+    values: 0+0x40
+  alert_rule_test:
+  - eval_time: 15m
+    alertname: DpgAvailabilityBurnFast
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: DpgAvailabilityBurnSlow
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: DpgLatencyBurnFast
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: DpgLatencyBurnSlow
+    exp_alerts: []
+- name: no-traffic
+  interval: 30s
+  input_series:
+  - series: traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code="200"}
+    values: 0+0x40
+  - series: traefik_service_requests_total{exported_service="dpg-app-app-nginx-http@kubernetes",code="500"}
+    values: 0+0x40
+  - series: traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="+Inf"}
+    values: 0+0x40
+  - series: traefik_service_request_duration_seconds_bucket{exported_service="dpg-app-app-nginx-http@kubernetes",le="0.3"}
+    values: 0+0x40
+  alert_rule_test:
+  - eval_time: 15m
+    alertname: DpgAvailabilityBurnFast
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: DpgAvailabilityBurnSlow
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: DpgLatencyBurnFast
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: DpgLatencyBurnSlow
+    exp_alerts: []
+  promql_expr_test:
+  - expr: dpg:slo_bad_ratio:5m
+    eval_time: 15m
+    exp_samples: []

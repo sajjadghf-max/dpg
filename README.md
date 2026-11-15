@@ -153,3 +153,14 @@ Firewall and SSH hardening are still pending. A clean rebuild and a complete
 repeat-provisioning check are also pending.
 
 Remaining work is tracked in [docs/tasks.md](docs/tasks.md).
+
+### Application dashboard and SLOs
+
+```sh
+bash scripts/install-observability.sh
+bash scripts/check-observability.sh
+bash scripts/test-slo-rules.sh
+```
+
+Open **Digipay application** in Grafana (`/d/dpg-application`).
+See [SLO targets and alert delivery](docs/alerting.md).

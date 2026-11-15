@@ -1,0 +1,3 @@
+receiver:
+  # Reuse the PHP image already imported into both workers. Set by the installer.
+  image: ""

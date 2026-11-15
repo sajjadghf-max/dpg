@@ -1,0 +1,25 @@
+alertmanager:
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: 'null'
+      group_by: [alertname, namespace, slo]
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 4h
+      routes:
+        - receiver: dpg-mock
+          matchers: ['scope="dpg"']
+        - receiver: 'null'
+          matchers: ['alertname="Watchdog"']
+    receivers:
+      - name: 'null'
+      - name: dpg-mock
+        webhook_configs:
+          - url: http://dpg-alert-receiver.monitoring.svc.cluster.local:8080/alerts
+            send_resolved: true
+    inhibit_rules:
+      - source_matchers: ['severity="critical"', 'scope="dpg"']
+        target_matchers: ['severity="warning"', 'scope="dpg"']
+        equal: [slo]
