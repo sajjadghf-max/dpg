@@ -12,10 +12,11 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Run host setup and verify all four VMs boot and accept SSH.
 - [x] Pin Kubespray, Kubernetes, containerd, etcd, and Calico versions.
 - [x] Add Kubespray inventory, API HAProxy playbook, and provisioning commands.
-- [ ] Automate VM creation and Kubernetes provisioning, including swap, kernel, sysctl, and cgroups.
+- [x] Automate VM creation and Kubernetes provisioning, including swap, kernel, sysctl, and cgroups.
 - [ ] Configure HAProxy, firewall rules, SSH restrictions, and unused-service hardening.
 - [x] Omit Keepalived as agreed; document the departure and single-LB limitation.
-- [ ] Verify clean bring-up, repeated provisioning, DNS, and cross-node networking.
+- [x] Verify API readiness, DNS, Service routing, and cross-node networking.
+- [ ] Verify a clean rebuild and complete repeated provisioning.
 
 ## Application and delivery
 

@@ -93,6 +93,16 @@ export KUBECONFIG="$PWD/.state/artifacts/admin.conf"
 .state/artifacts/kubectl get nodes -o wide
 ```
 
+Check API readiness, Calico, CoreDNS, in-pod DNS, Service routing, and pod HTTP
+traffic in both directions between the workers:
+
+```sh
+bash scripts/check-cluster.sh
+```
+
+The check creates two small BusyBox pods in a temporary namespace and removes
+the namespace when it finishes. The image is pinned by digest.
+
 SSH uses Vagrant's generated private keys and records first-seen host keys in
 `.state/known_hosts`. After intentionally destroying and recreating a VM, remove
 its old host key with `ssh-keygen -f .state/known_hosts -R <VM-IP>` before provisioning.
@@ -104,12 +114,12 @@ The three Kubernetes nodes can reach the load balancer over the lab network.
 HAProxy is active, its configuration passes validation, and it listens on
 `192.168.56.10:6443`. Re-running its playbook reported zero changes.
 
-Kubernetes has not been installed yet, so API forwarding is not verified.
-Firewall and SSH hardening are still pending.
+Kubernetes 1.36.4 is running with all three nodes Ready, using containerd 2.3.5.
+The API readiness check passes through HAProxy. Calico and CoreDNS are healthy.
+DNS and Service HTTP checks pass from both workers, and direct pod HTTP works
+in both directions across workers. The temporary check resources are removed.
 
-Local checks passed: ShellCheck, both playbooks' syntax checks, and Kubespray's
-inventory assertions in local check mode. The rendered HAProxy configuration
-passed a local syntax check using existing host accounts in place of the guest's
-haproxy account. These checks do not establish that a cluster is running.
+Firewall and SSH hardening are still pending. A clean rebuild and a complete
+repeat-provisioning check are also pending.
 
 Remaining work is tracked in [docs/tasks.md](docs/tasks.md).
