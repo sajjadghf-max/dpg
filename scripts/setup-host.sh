@@ -21,9 +21,29 @@ lab_user=$(id -un)
 download_dir=$(mktemp -d)
 trap 'rm -rf -- "$download_dir"' EXIT
 
+update_packages() {
+  local attempt status
+  for attempt in {1..6}; do
+    if sudo env LC_ALL=C apt-get update 2>&1 | tee "$download_dir/apt-update.log"; then
+      return 0
+    else
+      status=${PIPESTATUS[0]}
+    fi
+    if ! grep -q '^E: Could not get lock /var/lib/apt/lists/lock' "$download_dir/apt-update.log"; then
+      return "$status"
+    fi
+    if (( attempt < 6 )); then
+      printf 'APT lists are locked; retrying in 10 seconds (%s/6).\n' "$attempt"
+      sleep 10
+    fi
+  done
+  printf 'APT is still locked. Check the reported process; do not delete lock files.\n' >&2
+  return "$status"
+}
+
 sudo -v
-sudo apt-get update
-sudo apt-get install -y --no-install-recommends \
+update_packages
+sudo apt-get -o DPkg::Lock::Timeout=60 install -y --no-install-recommends \
   ca-certificates curl git python3 python3-venv openssh-client \
   qemu-system-x86 qemu-utils libvirt-daemon-system libvirt-clients dnsmasq-base \
   build-essential pkg-config libvirt-dev ruby-dev libxml2-dev libxslt1-dev zlib1g-dev
@@ -34,7 +54,7 @@ if [[ "$(dpkg-query -W -f='${Version}' vagrant 2>/dev/null || true)" != "$vagran
     --output "$download_dir/$deb_name"
   printf '%s  %s\n' "$deb_sha256" "$download_dir/$deb_name" | sha256sum --check --status
   chmod 755 "$download_dir"
-  sudo apt-get install -y "$download_dir/$deb_name"
+  sudo apt-get -o DPkg::Lock::Timeout=60 install -y "$download_dir/$deb_name"
 fi
 
 sudo systemctl enable --now libvirtd
