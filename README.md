@@ -105,9 +105,7 @@ vagrant ssh cp1
 ```
 
 The box is `bento/ubuntu-24.04`, pinned to `202508.03.0` for libvirt/amd64.
-The lab network is isolated on `192.168.56.0/24`; the separate management network
-uses NAT on `192.168.121.0/24` for SSH and outbound downloads. Neither overlaps
-the host routes checked during setup. Check again if VPN routes change.
+The lab network is isolated on `192.168.56.0/24`;
 
 Use `vagrant halt` to stop the VMs and release their memory.
 
@@ -226,6 +224,3 @@ Application: `https://app.dpg.test`; Grafana: `https://grafana.dpg.test`.
 Resolve both to `192.168.56.10` and use `.state/tls/ca.crt`. Grafana's user is
 `admin`; retrieve its password from `.state/monitoring/admin-password`. Argo CD
 Core has no public UI. See the access and diagnostic commands in the runbook.
-
-Clean rebuild, full Kubespray repeat provisioning, reboot persistence and restore
-drills are not verified. Backup/on-call targets are proposals.
