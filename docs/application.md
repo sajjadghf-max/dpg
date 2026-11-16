@@ -47,15 +47,6 @@ a slow-log threshold of 5 seconds and terminate after 10 seconds; NGINX waits
 accessible when application workers are occupied. These directives follow the
 [PHP-FPM configuration reference](https://www.php.net/manual/en/install.fpm.configuration.php).
 
-## Verified
-
-Configuration syntax, JSON responses, ignored spoofed forwarding headers,
-internal status endpoints, and public status-path blocking passed. Stopping
-PHP makes readiness fail while NGINX health stays up; restarting PHP restores
-readiness. The small check used roughly 10–26 MiB for PHP and 2.5 MiB for NGINX.
-These are Docker-network checks. Ingress checks are documented separately;
-the bounded 3× comparison is recorded in [capacity](capacity.md).
-
 ## Kubernetes deployment
 
 After cluster provisioning, install Metrics Server and deploy the chart:

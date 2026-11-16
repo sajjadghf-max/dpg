@@ -84,14 +84,3 @@ and alert queries currently use the configured ceiling of four.
 The burn logic follows the [multiwindow approach in the SRE Workbook](https://sre.google/workbook/alerting-on-slos/).
 Webhook routing uses [Alertmanager's supported configuration](https://prometheus.io/docs/alerting/latest/configuration/).
 See [failure exercises](failure-exercises.md) for measured incident impact and postmortems.
-
-## Verified in the lab
-
-On 2026-11-15, all 14 dashboard panels were provisioned and their PromQL queries
-were accepted. Screenshots show the live dashboard. Promtool passed four cases:
-healthy traffic (including no 5xx counter), sustained burn, low traffic below the
-notification floor, and no traffic. The no-traffic case produced no SLI sample.
-A temporary synthetic rule delivered both firing and resolved webhook messages
-through Prometheus and Alertmanager; the rule was then removed. All 28 scrape
-targets remained healthy and HTTPS/client-IP checks passed. This verifies rule
-logic and delivery, not an actual outage; failure exercises remain to be run.

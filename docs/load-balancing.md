@@ -34,13 +34,3 @@ missing HAProxy process, not every possible stuck process or failed backend.
 Failover does not preserve TCP sessions and is not a zero-downtime guarantee.
 A production design needs independent failure domains and multiple control-plane
 and etcd members.
-
-## Verification on 2026-11-16
-
-Stopping Keepalived and stopping HAProxy were tested separately on lb. In each
-case lb2 acquired the VIP, lb released it, and authenticated API readiness plus
-verified application HTTPS/client IP checks passed through lb2. Restoring each
-service returned the VIP to lb, with no duplicate owner after convergence.
-These were service-failure tests, not a physical-host outage or a TCP-session
-continuity measurement. A repeated configuration run reported zero changes on
-all five VMs.

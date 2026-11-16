@@ -47,12 +47,26 @@ ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=platfo
 ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=verify
 ```
 
-The component commands below use tags for individual steps. Argo CD remains the
-owner of application deployment; rerunning Ansible does not upgrade its Helm release.
+Bring up the lab in this order: host prerequisites → VMs → cluster → images →
+platform → verification. Before the first complete platform run, copy the built
+image tags from `.state/app-images.json` into `gitops/application.yaml`, review,
+commit and push them to the configured repository. Otherwise Argo may reconcile
+image references that are unavailable on the workers. See [GitOps](docs/gitops.md)
+for repository settings and image updates.
+
+The component commands below follow the same order using tags. Argo CD owns
+application deployment after bootstrap; rerunning Ansible does not upgrade its
+Helm release.
 
 ## Host setup
 
-Run on Ubuntu 24.04 amd64 as your normal user:
+Use Ubuntu 24.04 amd64 with Git, Python 3 and `python3-venv` available.
+Image builds also require a running Docker daemon accessible to your user,
+Docker Buildx, and Docker API 1.48 or newer (`docker image save --platform`).
+Platform installation requires Helm 3.21.3 on `PATH`. The host setup role installs
+virtualization dependencies; it does not replace an existing Docker installation.
+
+Run as your normal user:
 
 ```sh
 python3 -m venv .venv
@@ -171,25 +185,7 @@ ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=verify
 See [monitoring](docs/monitoring.md) for Grafana access, credentials, storage limits,
 and scrape coverage. This phase uses ephemeral storage to fit the local lab.
 
-## Current state
-
-Host setup is complete. All five VMs booted and passed Ansible SSH/sudo checks.
-The three Kubernetes nodes can reach the load balancer over the lab network.
-HAProxy is active, its configuration passes validation, and it listens on
-`192.168.56.10:6443`. The floating IP is shared by the two Keepalived instances.
-
-Kubernetes 1.36.4 is running with all three nodes Ready, using containerd 2.3.5.
-The API readiness check passes through HAProxy. Calico and CoreDNS are healthy.
-DNS and Service HTTP checks pass from both workers, and direct pod HTTP works
-in both directions across workers. The temporary check resources are removed.
-
-VM firewall, SSH and unused-service hardening are applied through
-[Ansible](docs/hardening.md). A clean rebuild and a complete repeat-provisioning
-check are still pending.
-
-Remaining work is tracked in [docs/tasks.md](docs/tasks.md).
-
-### Application dashboard and SLOs
+## Application dashboard and SLOs
 
 ```sh
 ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=platform --tags observability
@@ -199,13 +195,13 @@ ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=verify
 Open **Digipay application** in Grafana (`/d/dpg-application`).
 See [SLO targets and alert delivery](docs/alerting.md).
 
-### Failure exercises
+## Failure exercises
 
 See [the two bounded lab exercises](docs/failure-exercises.md) and their measured
 postmortems. They deliberately disrupt this lab; do not run them concurrently
 or during deployment.
 
-### GitOps and CI
+## GitOps and CI
 
 ```sh
 ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=platform --tags gitops
@@ -231,9 +227,5 @@ Resolve both to `192.168.56.10` and use `.state/tls/ca.crt`. Grafana's user is
 `admin`; retrieve its password from `.state/monitoring/admin-password`. Argo CD
 Core has no public UI. See the access and diagnostic commands in the runbook.
 
-A clean rebuild, full repeated provisioning, and a restore drill remain
-unverified. The backup/on-call targets are proposals, not operational
-commitments. This lab does not claim infrastructure HA or payments compliance.
-
-The hosted [Validate run](https://github.com/sajjadghf-max/dpg/actions/runs/43722750727)
-passed for GitOps commit `cb6fe8a` (verified 2026-11-16).
+Clean rebuild, full Kubespray repeat provisioning, reboot persistence and restore
+drills are not verified. Backup/on-call targets are proposals.

@@ -63,16 +63,3 @@ To undo the SSH policy, remove `/etc/ssh/sshd_config.d/00-dpg-hardening.conf` fr
 the console, run `sudo sshd -t`, then `sudo systemctl reload ssh`. Do not flush the
 whole firewall or remove Kubernetes rules. Console recovery and boot persistence
 are documented but have not been tested by rebooting the lab in this phase.
-
-## Verification
-
-Verified on 2026-11-16: fresh key-based SSH to all five VMs; effective SSH settings;
-host access to node ports 9100/10250 blocked; worker-to-control-plane SSH blocked;
-node-to-LB API access; DNS, Service routing and cross-worker pod traffic; HTTPS,
-client IP preservation, Grafana authentication, application NetworkPolicies and
-all 28 Prometheus targets. A second hardening run reports zero changes.
-
-HAProxy logs show HTTPS requests alternating between worker1 and worker2. API
-traffic uses its separate backend to cp1. Keepalived now supplies LB failover; the single control plane and physical host
-remain failure domains. VRRP (IP protocol 112) is accepted only between the two
-LB addresses. Both are allowed to reach API and ingress backends.

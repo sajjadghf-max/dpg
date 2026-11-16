@@ -39,12 +39,3 @@ NGINX trusts the lab pod CIDR for forwarding headers, paired with NetworkPolicy:
 only Traefik and the administrative Helm test client can reach its HTTP port.
 The ingress controller accepts public-entrypoint traffic only from the two LB VMs.
 The dashboard is disabled; no extra Gateway API or Traefik CRDs are installed.
-
-## Verified
-
-HTTPS certificate validation, HTTP-to-HTTPS redirect, health/readiness, and
-client IP preservation passed through the full chain. Six requests with forged
-`X-Forwarded-For`, `X-Real-IP`, and `Forwarded` headers still returned the actual
-host lab address, `192.168.56.1`. Public status paths returned 404.
-Direct NodePort access from the host was blocked, and the existing Helm
-allowed/denied traffic tests still passed.

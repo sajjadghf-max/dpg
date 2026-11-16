@@ -106,30 +106,3 @@ CRD-definition schema for this Kubernetes version: those upstream definitions
 are checksum-verified, compared unchanged after rendering, and their embedded
 schemas checked separately. Missing schemas for other standard resources fail
 validation. Schema validation does not replace API admission or runtime tests.
-
-## Verified on 2026-11-15
-
-The installer was rerun successfully. Argo used approximately 314 MiB across
-its three pods at the final resource check. `app` was Synced and Healthy at remote Git
-revision `5c7eebc882e8fdc5d149649bf16fb6dd41aea5e4`. Argo repaired an injected
-comment in its ConfigMap automatically; HTTPS/client-IP and both network tests
-passed. Local CI checks accepted 75 standard resources and eight custom resources
-or unchanged upstream CRDs. Deliberately invalid Deployment replica and AppProject
-namespace types were rejected. Verified on 2026-11-16: the hosted `Validate` workflow passed for
-commit `cb6fe8a0de5cea825c43a3a126805cd28511cc21`
-([run evidence](https://github.com/sajjadghf-max/dpg/actions/runs/43722750727)).
-
-During CRD installation on the original 2 GiB control plane, the API server was
-OOM-killed three times as its pod memory cgroup ran out of room. It recovered;
-two CRDs needed an update to resume establishment. With approval, cp1 was raised
-to 3 GiB, taking the VM total to 9.5 GiB. Vagrant's reload hit a provider error
-after shutdown, so the stopped domain's persistent memory was updated through
-libvirt and the VM started again. The Vagrantfile now specifies 3 GiB for new
-builds; the installer applies CRDs sequentially and waits for establishment.
-
-After the resize, the API and node recovered and Argo remained Healthy. The
-installer rerun, self-healing test, all 28 scrapes, Grafana TLS/login, and network
-checks passed; the API-server restart count did not increase during verification.
-A clean rebuild is still unverified; successful reconciliation is not proof of
-reproducible provisioning or HA. The single control-plane API is unavailable
-while cp1 is stopped, even when the application continues serving on workers.

@@ -77,11 +77,5 @@ See [SLOs and alert delivery](alerting.md) for targets, limitations, rules,
 and verification commands. The stack also keeps its upstream Kubernetes
 dashboards and default rules. Failure exercises remain a separate step.
 
-Verified on 2026-11-15: all 28 scrape targets were healthy, including both NGINX
-exporters, both PHP-FPM exporters, both Traefik replicas, and nine kubelet
-endpoints. Grafana rejected anonymous API access and accepted the generated
-admin credentials over verified HTTPS. Application and network checks passed.
-
-Grafana exceeded the initial 256 MiB limit during startup. Its final limit is
-512 MiB, with a 256 MiB request; each configuration sidecar requests 64 MiB and
-has a 192 MiB limit. Recheck usage when adding dashboards or load.
+Grafana has a 512 MiB limit and 256 MiB request; each configuration sidecar
+requests 64 MiB with a 192 MiB limit. Recheck usage when adding dashboards or load.

@@ -20,7 +20,7 @@ Both can pass while `/` fails: the 503 exercise demonstrated that case.
 
 | Symptom | Inspect | Action |
 | --- | --- | --- |
-| Connection/TLS failure | HAProxy, Traefik pods, local CA/leaf expiry, hostname resolution | Restore the affected proxy/config or renew through `install-ingress.sh`; verify with the CA, not `curl -k`. |
+| Connection/TLS failure | HAProxy, Traefik pods, local CA/leaf expiry, hostname resolution | Restore the affected proxy/config or renew through the Ansible platform phase with `--tags ingress`; verify with the CA, not `curl -k`. |
 | Root 5xx, probes green | Recent Git/chart change, NGINX logs, request/error panels | Revert the bad reviewed change; confirm `/` and client IP, not only probes. |
 | PHP 502/504 or readiness failure | PHP pods, Service endpoints, PHP logs, queue and upstream latency | Fix/roll back backend config; inspect slow requests before raising replicas or timeouts. |
 | CrashLoop/OOM | Pod events, previous logs, limits, node memory | Restore known-good image/config or correct measured resource needs; do not restart repeatedly without the reason. |
@@ -56,15 +56,19 @@ cp1 is reachable, compare the direct endpoint with the same trusted kubeconfig:
 
 ```sh
 "$K" --server=https://192.168.56.11:6443 get --raw=/readyz
-ansible lb -i inventory/lab/hosts.yml -b -m command \
+ansible load_balancer -i inventory/lab/hosts.yml -b -m command \
   -a 'haproxy -c -f /etc/haproxy/haproxy.cfg'
+ansible load_balancer -i inventory/lab/hosts.yml -b -m command \
+  -a 'systemctl status haproxy keepalived'
+ansible load_balancer -i inventory/lab/hosts.yml -b -m command \
+  -a 'ip -4 address show dev eth1'
 ansible cp1 -i inventory/lab/hosts.yml -b -m command -a 'systemctl status etcd kubelet'
 ansible cp1 -i inventory/lab/hosts.yml -b -m command -a 'free -m'
 ```
 
 If cp1 is stopped, restore that VM; there is no standby API or etcd member.
 Inspect guest kernel OOM logs and disk space before restarting services. The
-control plane is now 3 GiB after OOMs during CRD installation; see [GitOps](gitops.md).
+control plane has 3 GiB; Argo CRDs are applied sequentially to limit memory pressure.
 Loss of etcd data requires the separate recovery procedure, not a blind service
 restart or fresh empty data directory.
 

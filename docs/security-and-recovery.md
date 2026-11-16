@@ -1,6 +1,6 @@
 # Security and recovery
 
-## Current controls and gaps
+## Security controls and limits
 
 Application containers run as non-root with read-only roots, dropped capabilities,
 no service-account token, resource limits, and a small writable `/tmp`. The app
