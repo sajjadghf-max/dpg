@@ -13,7 +13,8 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Pin Kubespray, Kubernetes, containerd, etcd, and Calico versions.
 - [x] Add Kubespray inventory, API HAProxy playbook, and provisioning commands.
 - [x] Automate VM creation and Kubernetes provisioning, including swap, kernel, sysctl, and cgroups.
-- [ ] Configure HAProxy, firewall rules, SSH restrictions, and unused-service hardening.
+- [x] Configure HAProxy for API and application traffic.
+- [ ] Configure VM firewall rules, SSH restrictions, and unused-service hardening (deferred).
 - [x] Omit Keepalived as agreed; document the departure and single-LB limitation.
 - [x] Verify API readiness, DNS, Service routing, and cross-node networking.
 - [ ] Verify a clean rebuild and complete repeated provisioning.
@@ -26,7 +27,7 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Add startup/liveness/readiness probes, resource settings, HPA, and PDBs.
 - [x] Restrict traffic with NetworkPolicies and test allowed/denied paths.
 - [x] Add ingress and TLS; verify real client IPs through the full proxy chain.
-- [x] Configure GitOps and CI chart/manifest validation (local checks passed; hosted workflow awaits push).
+- [x] Configure GitOps and CI chart/manifest validation (local checks and hosted Validate run passed).
 
 ## Observability and exercises
 
@@ -41,10 +42,11 @@ Checked items are complete. Runtime results will be recorded only after testing.
 
 ## Operational handover
 
-- [ ] Write the alerting strategy, runbook, architecture diagram, and walkthrough.
+- [x] Write the alerting strategy, runbook, architecture diagram, and walkthrough.
 - [x] Draft the one-page stakeholder summary and four-stage status updates.
-- [ ] Document on-call rotation, escalation, and handover.
-- [ ] Measure capacity for 3x traffic; document scaling and cost trade-offs.
-- [ ] Document security, secrets, payments data handling, and etcd/application backup and recovery.
-- [ ] Describe change review, rollback, and one first-month reliability practice.
-- [ ] Verify a clean rebuild and finish README access instructions and caveats.
+- [x] Document on-call rotation, escalation, and handover.
+- [x] Measure capacity for 3x traffic; document scaling and cost trade-offs.
+- [x] Document security, secrets, payments data handling, and etcd/application backup and recovery.
+- [x] Describe change review, rollback, and one first-month reliability practice.
+- [x] Finish README access instructions and caveats.
+- [ ] Verify a clean rebuild and a backup restore drill.

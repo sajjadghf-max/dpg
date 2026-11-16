@@ -13,6 +13,20 @@ The lab uses libvirt/KVM, Ubuntu 24.04 guests, containerd, and Calico.
 Kubespray uses kubeadm internally, so it fits the brief's kubeadm requirement.
 See the [upstream explanation](https://github.com/kubernetes-sigs/kubespray/blob/master/docs/getting_started/comparisons.md#kubespray-vs-kubeadm).
 
+```mermaid
+flowchart LR
+  Client -->|HTTPS| LB[HAProxy]
+  LB -->|PROXY v2| Ingress[Traefik x2]
+  Ingress --> NGINX[NGINX x2–3]
+  NGINX -->|FastCGI| PHP[PHP-FPM x2–3]
+  Operator -->|6443| LB
+  LB -->|API TLS| CP[Single control plane + etcd]
+  Git --> Argo[Argo CD Core]
+  Argo --> CP
+```
+
+[Full architecture and walkthrough](docs/architecture.md).
+
 ## Limits
 
 This is a small lab on one physical host. The load balancer, control plane, and
@@ -48,7 +62,8 @@ and [libvirt plugin requirements](https://vagrant-libvirt.github.io/vagrant-libv
 
 The four VMs reserve 9.5 GiB RAM in total. Free at least 11 GiB of available host
 memory before starting all four, allowing some room for virtualization overhead.
-This is an initial budget; workload capacity still needs measurement.
+The bounded 10 → 30 RPS comparison is recorded in [capacity](docs/capacity.md);
+it is not a maximum-throughput claim.
 
 ```sh
 vagrant validate
@@ -182,3 +197,23 @@ bash scripts/validate.sh
 
 Argo CD Core manages the application from `main`; use Git for chart changes.
 See [GitOps ownership, image updates, CI, and rollback](docs/gitops.md).
+
+## Operational handover
+
+- [Architecture and walkthrough](docs/architecture.md)
+- [Incident runbook](docs/runbook.md)
+- [On-call, escalation, handover, and change review](docs/operations.md)
+- [Measured 3× comparison and scaling/cost trade-offs](docs/capacity.md)
+- [Security, secrets, payments data, and backup/recovery plan](docs/security-and-recovery.md)
+
+Application: `https://app.dpg.test`; Grafana: `https://grafana.dpg.test`.
+Resolve both to `192.168.56.10` and use `.state/tls/ca.crt`. Grafana's user is
+`admin`; retrieve its password from `.state/monitoring/admin-password`. Argo CD
+Core has no public UI. See the access and diagnostic commands in the runbook.
+
+Hardening, a clean rebuild, full repeated provisioning, and a restore drill remain
+unverified or deferred. The backup/on-call targets are proposals, not operational
+commitments. This lab does not claim infrastructure HA or payments compliance.
+
+The hosted [Validate run](https://github.com/sajjadghf-max/dpg/actions/runs/43722750727)
+passed for GitOps commit `cb6fe8a` (verified 2026-11-16).

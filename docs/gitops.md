@@ -114,8 +114,9 @@ revision `5c7eebc882e8fdc5d149649bf16fb6dd41aea5e4`. Argo repaired an injected
 comment in its ConfigMap automatically; HTTPS/client-IP and both network tests
 passed. Local CI checks accepted 75 standard resources and eight custom resources
 or unchanged upstream CRDs. Deliberately invalid Deployment replica and AppProject
-namespace types were rejected. The hosted workflow has not run yet: these new
-files must be committed and pushed first.
+namespace types were rejected. Verified on 2026-11-16: the hosted `Validate` workflow passed for
+commit `cb6fe8a0de5cea825c43a3a126805cd28511cc21`
+([run evidence](https://github.com/sajjadghf-max/dpg/actions/runs/43722750727)).
 
 During CRD installation on the original 2 GiB control plane, the API server was
 OOM-killed three times as its pod memory cgroup ran out of room. It recovered;

@@ -1,0 +1,652 @@
+{
+  "measured_at": "2026-11-16T06:22:01.707197+00:00",
+  "method": "Fixed-rate schedule; up to 16 in-flight HTTP/1.1 keep-alive connections. Verified TLS and client IP. Metrics snapshots before/after each stage; CPU uses trailing 1m rates.",
+  "stages": [
+    {
+      "rps_target": 10,
+      "duration_target_seconds": 120,
+      "started_at": "2026-11-16T06:18:01.658108+00:00",
+      "ended_at": "2026-11-16T06:20:01.641154+00:00",
+      "requests": 1200,
+      "scheduler_missed": 0,
+      "elapsed_seconds": 119.90610348701011,
+      "achieved_rps": 10.007830836818082,
+      "codes": {
+        "200": 1200
+      },
+      "functional_errors": 0,
+      "latency_above_300ms": 0,
+      "p50_seconds": 0.0051609830115921795,
+      "p95_seconds": 0.00898477400187403,
+      "p99_seconds": 0.010050256038084626,
+      "max_seconds": 0.06412669800920412,
+      "metrics": [
+        {
+          "time": "2026-11-16T06:18:01.658108+00:00",
+          "cpu_cores": [
+            {
+              "metric": {
+                "container": "php"
+              },
+              "value": [
+                1794809881.024,
+                "0.0052811028241427655"
+              ]
+            },
+            {
+              "metric": {
+                "container": "exporter"
+              },
+              "value": [
+                1794809881.024,
+                "0.0017265804852133273"
+              ]
+            },
+            {
+              "metric": {
+                "container": "nginx"
+              },
+              "value": [
+                1794809881.024,
+                "0.00015029358752633422"
+              ]
+            }
+          ],
+          "memory_bytes": [
+            {
+              "metric": {
+                "container": "exporter"
+              },
+              "value": [
+                1794809881.027,
+                "32010240"
+              ]
+            },
+            {
+              "metric": {
+                "container": "php"
+              },
+              "value": [
+                1794809881.027,
+                "27238400"
+              ]
+            },
+            {
+              "metric": {
+                "container": "nginx"
+              },
+              "value": [
+                1794809881.027,
+                "4960256"
+              ]
+            }
+          ],
+          "hpa_current": [
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_current_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-php",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794809881.032,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_current_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-nginx",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794809881.032,
+                "2"
+              ]
+            }
+          ],
+          "hpa_desired": [
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_desired_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-php",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794809881.039,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_desired_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-nginx",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794809881.039,
+                "2"
+              ]
+            }
+          ],
+          "php_queue": [
+            {
+              "metric": {},
+              "value": [
+                1794809881.042,
+                "0"
+              ]
+            }
+          ],
+          "php_active": [
+            {
+              "metric": {},
+              "value": [
+                1794809881.044,
+                "0"
+              ]
+            }
+          ]
+        },
+        {
+          "time": "2026-11-16T06:20:01.587945+00:00",
+          "cpu_cores": [
+            {
+              "metric": {
+                "container": "exporter"
+              },
+              "value": [
+                1794810000.972,
+                "0.0025955477039659794"
+              ]
+            },
+            {
+              "metric": {
+                "container": "php"
+              },
+              "value": [
+                1794810000.972,
+                "0.010361214029887478"
+              ]
+            },
+            {
+              "metric": {
+                "container": "nginx"
+              },
+              "value": [
+                1794810000.972,
+                "0.002983946165711961"
+              ]
+            }
+          ],
+          "memory_bytes": [
+            {
+              "metric": {
+                "container": "exporter"
+              },
+              "value": [
+                1794810000.986,
+                "31404032"
+              ]
+            },
+            {
+              "metric": {
+                "container": "php"
+              },
+              "value": [
+                1794810000.986,
+                "27541504"
+              ]
+            },
+            {
+              "metric": {
+                "container": "nginx"
+              },
+              "value": [
+                1794810000.986,
+                "4984832"
+              ]
+            }
+          ],
+          "hpa_current": [
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_current_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-php",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810000.993,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_current_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-nginx",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810000.993,
+                "2"
+              ]
+            }
+          ],
+          "hpa_desired": [
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_desired_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-php",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810000.997,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_desired_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-nginx",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810000.997,
+                "2"
+              ]
+            }
+          ],
+          "php_queue": [
+            {
+              "metric": {},
+              "value": [
+                1794810001.001,
+                "0"
+              ]
+            }
+          ],
+          "php_active": [
+            {
+              "metric": {},
+              "value": [
+                1794810001.004,
+                "0"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rps_target": 30,
+      "duration_target_seconds": 120,
+      "started_at": "2026-11-16T06:20:01.641879+00:00",
+      "ended_at": "2026-11-16T06:22:01.658883+00:00",
+      "requests": 3600,
+      "scheduler_missed": 0,
+      "elapsed_seconds": 119.96968125004787,
+      "achieved_rps": 30.00758160302742,
+      "codes": {
+        "200": 3600
+      },
+      "functional_errors": 0,
+      "latency_above_300ms": 0,
+      "p50_seconds": 0.005733172001782805,
+      "p95_seconds": 0.008823629992548376,
+      "p99_seconds": 0.010814794979523867,
+      "max_seconds": 0.11275959899649024,
+      "metrics": [
+        {
+          "time": "2026-11-16T06:20:01.641879+00:00",
+          "cpu_cores": [
+            {
+              "metric": {
+                "container": "exporter"
+              },
+              "value": [
+                1794810001.008,
+                "0.0025941153180637543"
+              ]
+            },
+            {
+              "metric": {
+                "container": "php"
+              },
+              "value": [
+                1794810001.008,
+                "0.010361214029887478"
+              ]
+            },
+            {
+              "metric": {
+                "container": "nginx"
+              },
+              "value": [
+                1794810001.008,
+                "0.002980738435835566"
+              ]
+            }
+          ],
+          "memory_bytes": [
+            {
+              "metric": {
+                "container": "exporter"
+              },
+              "value": [
+                1794810001.013,
+                "31404032"
+              ]
+            },
+            {
+              "metric": {
+                "container": "php"
+              },
+              "value": [
+                1794810001.013,
+                "27541504"
+              ]
+            },
+            {
+              "metric": {
+                "container": "nginx"
+              },
+              "value": [
+                1794810001.013,
+                "4984832"
+              ]
+            }
+          ],
+          "hpa_current": [
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_current_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-php",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810001.018,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_current_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-nginx",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810001.018,
+                "2"
+              ]
+            }
+          ],
+          "hpa_desired": [
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_desired_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-php",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810001.021,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_desired_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-nginx",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810001.021,
+                "2"
+              ]
+            }
+          ],
+          "php_queue": [
+            {
+              "metric": {},
+              "value": [
+                1794810001.024,
+                "0"
+              ]
+            }
+          ],
+          "php_active": [
+            {
+              "metric": {},
+              "value": [
+                1794810001.027,
+                "0"
+              ]
+            }
+          ]
+        },
+        {
+          "time": "2026-11-16T06:22:01.633342+00:00",
+          "cpu_cores": [
+            {
+              "metric": {
+                "container": "exporter"
+              },
+              "value": [
+                1794810121.002,
+                "0.002856076344690357"
+              ]
+            },
+            {
+              "metric": {
+                "container": "php"
+              },
+              "value": [
+                1794810121.002,
+                "0.016134975094919287"
+              ]
+            },
+            {
+              "metric": {
+                "container": "nginx"
+              },
+              "value": [
+                1794810121.002,
+                "0.007521536168735195"
+              ]
+            }
+          ],
+          "memory_bytes": [
+            {
+              "metric": {
+                "container": "exporter"
+              },
+              "value": [
+                1794810121.005,
+                "31608832"
+              ]
+            },
+            {
+              "metric": {
+                "container": "php"
+              },
+              "value": [
+                1794810121.005,
+                "27537408"
+              ]
+            },
+            {
+              "metric": {
+                "container": "nginx"
+              },
+              "value": [
+                1794810121.005,
+                "5001216"
+              ]
+            }
+          ],
+          "hpa_current": [
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_current_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-php",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810121.01,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_current_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-nginx",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810121.01,
+                "2"
+              ]
+            }
+          ],
+          "hpa_desired": [
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_desired_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-php",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810121.015,
+                "2"
+              ]
+            },
+            {
+              "metric": {
+                "__name__": "kube_horizontalpodautoscaler_status_desired_replicas",
+                "container": "kube-state-metrics",
+                "endpoint": "http",
+                "horizontalpodautoscaler": "app-nginx",
+                "instance": "10.233.105.147:8080",
+                "job": "kube-state-metrics",
+                "namespace": "dpg-app",
+                "pod": "monitoring-kube-state-metrics-5589d8d648-xdsfk",
+                "service": "monitoring-kube-state-metrics"
+              },
+              "value": [
+                1794810121.015,
+                "2"
+              ]
+            }
+          ],
+          "php_queue": [
+            {
+              "metric": {},
+              "value": [
+                1794810121.018,
+                "0"
+              ]
+            }
+          ],
+          "php_active": [
+            {
+              "metric": {},
+              "value": [
+                1794810121.022,
+                "0"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

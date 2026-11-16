@@ -26,9 +26,9 @@ Temporary containers and their network are removed afterward.
 | NGINX 8081 | `/nginx-status` | NGINX stub_status for the exporter |
 | NGINX 8081 | `/fpm-status` | PHP-FPM pool status for the exporter |
 
-The future public Service must expose only port 8080. Port 8081 and PHP's
+The public Service exposes only port 8080. Port 8081 and PHP's
 FastCGI ports 9000/9001 are for internal traffic. NetworkPolicies and probes
-will be added with the Helm chart. NGINX logs JSON with status and request/upstream
+are part of the Helm chart. NGINX logs JSON with status and request/upstream
 timing, without query strings or request bodies.
 
 ## PHP-FPM pool
@@ -54,7 +54,7 @@ internal status endpoints, and public status-path blocking passed. Stopping
 PHP makes readiness fail while NGINX health stays up; restarting PHP restores
 readiness. The small check used roughly 10–26 MiB for PHP and 2.5 MiB for NGINX.
 These are Docker-network checks. Ingress checks are documented separately;
-load capacity still needs measurement.
+the bounded 3× comparison is recorded in [capacity](capacity.md).
 
 ## Kubernetes deployment
 
@@ -73,7 +73,7 @@ TLS verification is enabled both for kubelets and the aggregated Metrics API.
 
 The deployment script builds the images, tags them by image ID, and imports
 them into both workers. The chart uses `imagePullPolicy: Never` for this local
-lab; image publishing will be added with CI. Unchanged image content keeps the
+lab; CI validates manifests but does not publish images, as agreed. Unchanged image content keeps the
 same tag. Use the dedicated `dpg-app` namespace because its default-deny policy
 covers every pod in that namespace.
 
@@ -89,8 +89,8 @@ policies allow DNS, NGINX-to-PHP FastCGI, and the Helm test client. Additional
 NGINX sources are set with `nginx.ingressFrom` for the ingress controller.
 The public endpoint is described in [ingress and TLS](ingress.md).
 
-`helm test app -n dpg-app --logs` checks JSON, health/readiness, allowed traffic,
+`bash scripts/check-app-network.sh` checks JSON, health/readiness, allowed traffic,
 and blocked direct PHP/unauthorized NGINX connections. Completed test pods retain
 their logs and are replaced on the next test run. Metrics collection, both HPA
-CPU targets, PDB availability, and cross-worker placement were checked. Scaling
-under load and node-failure recovery remain for the later exercises.
+CPU targets, PDB availability, and cross-worker placement were checked. The bounded traffic test is separate from maximum-capacity measurement.
+Pod eviction was tested; node-failure recovery remains unverified.
