@@ -1,0 +1,9 @@
+- name: Copy optional CA from the controller without committing it
+  ansible.builtin.copy:
+    src: '{{ lab_ca_file }}'
+    dest: /usr/local/share/ca-certificates/lab-company-root.crt
+    owner: root
+    group: root
+    mode: '0644'
+  when: lab_ca_file | length > 0
+  notify: Update CA trust

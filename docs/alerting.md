@@ -1,9 +1,8 @@
 # Application SLOs and alerts
 
 ```sh
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags observability
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags observability
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags observability
+ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags observability
+ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags observability
 ```
 
 The Helm release `dpg-observability` owns the dashboard, recording/alert rules,

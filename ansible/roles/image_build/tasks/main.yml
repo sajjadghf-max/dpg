@@ -1,0 +1,44 @@
+- name: Create private image archive directory
+  ansible.builtin.file:
+    path: '{{ state_dir }}/images'
+    state: directory
+    mode: '0700'
+- name: Build each component and read its content ID
+  ansible.builtin.include_tasks: build-image.yml
+  loop:
+  - php
+  - nginx
+  loop_control:
+    loop_var: component
+- name: Save image settings for application bootstrap
+  ansible.builtin.copy:
+    dest: '{{ state_dir }}/app-images.json'
+    content: '{{ built_images | to_nice_json }}
+
+      '
+    mode: '0600'
+- name: Inspect current archive identity
+  ansible.builtin.stat:
+    path: '{{ state_dir }}/images/{{ built_images | to_json | hash(''sha256'') }}.tar'
+  register: image_archive
+- name: Export a new archive only when image content changed
+  ansible.builtin.command:
+    argv:
+    - docker
+    - image
+    - save
+    - --platform
+    - linux/amd64
+    - --output
+    - '{{ state_dir }}/images/{{ built_images | to_json | hash(''sha256'') }}.tar'
+    - '{{ built_images.php.image }}'
+    - '{{ built_images.nginx.image }}'
+  when: not image_archive.stat.exists
+  changed_when: true
+- name: Restrict archive permissions
+  ansible.builtin.file:
+    path: '{{ state_dir }}/images/{{ built_images | to_json | hash(''sha256'') }}.tar'
+    mode: '0600'
+- name: Record archive path for the worker play
+  ansible.builtin.set_fact:
+    app_archive: '{{ state_dir }}/images/{{ built_images | to_json | hash(''sha256'') }}.tar'

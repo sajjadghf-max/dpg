@@ -56,10 +56,10 @@ cp1 is reachable, compare the direct endpoint with the same trusted kubeconfig:
 
 ```sh
 "$K" --server=https://192.168.56.11:6443 get --raw=/readyz
-.venv/bin/ansible lb -i inventory/lab/hosts.yml -b -m command \
+ansible lb -i inventory/lab/hosts.yml -b -m command \
   -a 'haproxy -c -f /etc/haproxy/haproxy.cfg'
-.venv/bin/ansible cp1 -i inventory/lab/hosts.yml -b -m command -a 'systemctl status etcd kubelet'
-.venv/bin/ansible cp1 -i inventory/lab/hosts.yml -b -m command -a 'free -m'
+ansible cp1 -i inventory/lab/hosts.yml -b -m command -a 'systemctl status etcd kubelet'
+ansible cp1 -i inventory/lab/hosts.yml -b -m command -a 'free -m'
 ```
 
 If cp1 is stopped, restore that VM; there is no standby API or etcd member.
@@ -78,9 +78,9 @@ Helm `app` release for upgrade/rollback/uninstall. See [change and on-call polic
 After recovery:
 
 ```sh
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags ingress
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags app
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags monitoring
+ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags ingress
+ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags app
+ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags monitoring
 "$K" -n argocd get application app
 ```
 

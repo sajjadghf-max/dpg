@@ -1,0 +1,8 @@
+- name: Reload SSH
+  ansible.builtin.systemd_service:
+    name: ssh
+    state: reloaded
+- name: Apply host firewall
+  ansible.builtin.systemd_service:
+    name: dpg-host-firewall
+    state: reloaded

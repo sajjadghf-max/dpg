@@ -51,7 +51,7 @@
 
     - name: Create one HTTP test pod on each worker
       kubernetes.core.k8s:
-        definition: "{{ lookup('template', 'templates/network-pod.yml.j2') | from_yaml }}"
+        definition: "{{ lookup('template', 'network-pod.yml.j2') | from_yaml }}"
         wait: true
         wait_timeout: 180
       loop: "{{ groups['kube_node'] }}"

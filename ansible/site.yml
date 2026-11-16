@@ -1,0 +1,9 @@
+# Create the Vagrant VMs and prepare Kubespray before running this entry point.
+- name: Provision the cluster
+  ansible.builtin.import_playbook: cluster.yml
+
+- name: Prepare application images
+  ansible.builtin.import_playbook: images.yml
+
+- name: Configure the platform
+  ansible.builtin.import_playbook: platform.yml

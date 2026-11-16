@@ -8,7 +8,7 @@ Do not run them concurrently or during an application deployment.
 ```sh
 python3 scripts/run-failure-exercise.py eviction
 python3 scripts/run-failure-exercise.py http503
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags ingress
+ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags ingress
 ```
 
 The first test evicts one NGINX pod through the eviction API, immediately tries

@@ -1,0 +1,1 @@
+lab_ca_file: '{{ lookup(''env'', ''LAB_CA_FILE'') }}'

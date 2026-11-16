@@ -1,24 +1,7 @@
-# Keep this field aligned with kubelet_rotate_server_certificates in the inventory.
 - name: Enable kubelet serving certificate requests on the existing cluster
   hosts: k8s_cluster
   become: true
   serial: 1
   gather_facts: false
-  tasks:
-    - name: Check for an existing signed serving certificate
-      ansible.builtin.stat:
-        path: /var/lib/kubelet/pki/kubelet-server-current.pem
-        follow: true
-      register: kubelet_serving_certificate
-
-    - name: Enable server TLS bootstrap
-      ansible.builtin.lineinfile:
-        path: /etc/kubernetes/kubelet-config.yaml
-        regexp: '^serverTLSBootstrap:'
-        line: 'serverTLSBootstrap: true'
-      notify: Restart kubelet
-  handlers:
-    - name: Restart kubelet
-      ansible.builtin.systemd_service:
-        name: kubelet
-        state: restarted
+  roles:
+    - kubelet_serving

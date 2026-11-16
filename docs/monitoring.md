@@ -1,8 +1,8 @@
 # Monitoring
 
 ```sh
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags monitoring
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags monitoring
+ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags monitoring
+ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags monitoring
 ```
 
 The installer pins kube-prometheus-stack 93.3.0 and verifies its archive checksum.

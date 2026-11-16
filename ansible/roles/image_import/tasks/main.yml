@@ -1,0 +1,32 @@
+- name: Read worker image names
+  ansible.builtin.command: /usr/local/bin/ctr --namespace k8s.io images list -q
+  register: worker_images
+  changed_when: false
+- name: Import missing application images
+  when: force_image_import | default(false) | bool or ('docker.io/library/' ~ hostvars['localhost'].built_images.php.image)
+    not in worker_images.stdout_lines or ('docker.io/library/' ~ hostvars['localhost'].built_images.nginx.image) not in worker_images.stdout_lines
+  block:
+  - name: Copy content-addressed archive
+    ansible.builtin.copy:
+      src: '{{ hostvars[''localhost''].app_archive }}'
+      dest: /var/tmp/dpg-app-images.tar
+      mode: '0600'
+  - name: Import images without remote transfer-service contention
+    ansible.builtin.command:
+      argv:
+      - /usr/local/bin/ctr
+      - --namespace
+      - k8s.io
+      - images
+      - import
+      - --local
+      - --platform
+      - linux/amd64
+      - /var/tmp/dpg-app-images.tar
+    changed_when: true
+  - name: Confirm both imported names are available
+    ansible.builtin.command: /usr/local/bin/ctr --namespace k8s.io images list -q
+    register: imported_images
+    changed_when: false
+    failed_when: ('docker.io/library/' ~ hostvars['localhost'].built_images.php.image) not in imported_images.stdout_lines
+      or ('docker.io/library/' ~ hostvars['localhost'].built_images.nginx.image) not in imported_images.stdout_lines

@@ -1,0 +1,11 @@
+- name: Check for an existing signed serving certificate
+  ansible.builtin.stat:
+    path: /var/lib/kubelet/pki/kubelet-server-current.pem
+    follow: true
+  register: kubelet_serving_certificate
+- name: Enable server TLS bootstrap
+  ansible.builtin.lineinfile:
+    path: /etc/kubernetes/kubelet-config.yaml
+    regexp: '^serverTLSBootstrap:'
+    line: 'serverTLSBootstrap: true'
+  notify: Restart kubelet

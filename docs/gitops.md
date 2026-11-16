@@ -7,8 +7,8 @@ set the image tags in `gitops/application.yaml` from `.state/app-images.json`
 before installing Argo; do not assume another build has the same image IDs.
 
 ```sh
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags gitops
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags gitops
+ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags gitops
+ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags gitops
 ```
 
 Argo CD Core 3.6.1 runs the application controller, repo server, and Redis, each
@@ -28,7 +28,7 @@ at install time. The certificate is copied into Argo's GitHub trust ConfigMap,
 not committed or used to disable certificate verification:
 
 ```sh
-GIT_CA_FILE=/path/to/trusted-root.pem .venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags gitops
+GIT_CA_FILE=/path/to/trusted-root.pem ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags gitops
 ```
 
 `gitops/project.yaml` permits only this repository and namespaced application
@@ -66,7 +66,7 @@ Images still use the agreed local import workflow; CI does not publish images.
 Build and import on both workers before changing an image reference:
 
 ```sh
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
+ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
 cat .state/app-images.json
 ```
 

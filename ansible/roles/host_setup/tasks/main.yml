@@ -1,0 +1,74 @@
+- name: Require the supported host and a normal invoking user
+  ansible.builtin.assert:
+    that:
+    - ansible_facts.distribution == 'Ubuntu'
+    - ansible_facts.distribution_version == '24.04'
+    - ansible_facts.architecture == 'x86_64'
+    - lab_user != 'root'
+- name: Install libvirt and build prerequisites
+  ansible.builtin.apt:
+    name:
+    - ca-certificates
+    - curl
+    - git
+    - python3
+    - python3-venv
+    - openssh-client
+    - qemu-system-x86
+    - qemu-utils
+    - libvirt-daemon-system
+    - libvirt-clients
+    - dnsmasq-base
+    - build-essential
+    - pkg-config
+    - libvirt-dev
+    - ruby-dev
+    - libxml2-dev
+    - libxslt1-dev
+    - zlib1g-dev
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 120
+  become: true
+- name: Inspect installed Vagrant version
+  ansible.builtin.command: dpkg-query -W -f=${Version} vagrant
+  register: installed_vagrant
+  changed_when: false
+  failed_when: installed_vagrant.rc not in [0, 1]
+- name: Download pinned Vagrant package
+  ansible.builtin.get_url:
+    url: https://apt.releases.hashicorp.com/pool/amd64/main/vagrant_2.4.9-1_amd64.deb
+    dest: /var/tmp/dpg-vagrant-2.4.9-1.deb
+    checksum: sha256:42d830d05e6e9e647f8a5c854d9f5295e319dac74edd37d54b97b4f29cbbd70d
+    mode: '0644'
+  become: true
+  when: installed_vagrant.stdout != '2.4.9-1'
+- name: Install pinned Vagrant
+  ansible.builtin.apt:
+    deb: /var/tmp/dpg-vagrant-2.4.9-1.deb
+    lock_timeout: 120
+  become: true
+  when: installed_vagrant.stdout != '2.4.9-1'
+- name: Enable libvirt
+  ansible.builtin.systemd_service:
+    name: libvirtd
+    enabled: true
+    state: started
+  become: true
+- name: Grant the invoking user libvirt and KVM access
+  ansible.builtin.user:
+    name: '{{ lab_user }}'
+    groups:
+    - libvirt
+    - kvm
+    append: true
+  become: true
+- name: Inspect installed Vagrant plugins
+  ansible.builtin.command: vagrant plugin list
+  register: vagrant_plugins
+  changed_when: false
+- name: Install the pinned libvirt provider
+  ansible.builtin.command: vagrant plugin install vagrant-libvirt --plugin-version 0.12.2
+  when: '''vagrant-libvirt (0.12.2,'' not in vagrant_plugins.stdout'
+  changed_when: true

@@ -1,12 +1,28 @@
 # Automation
 
 Ansible configures the VMs and Kubernetes platform. Argo CD owns application
-reconciliation after bootstrap. Run commands from the repository root.
+reconciliation after bootstrap. Run commands from the repository root with the
+controller environment activated:
+
+```sh
+source .venv/bin/activate
+```
+
+The project uses `ansible.cfg`, the inventory in `inventory/lab`, and reusable
+roles in `ansible/roles`. Playbooks select hosts and roles; each role keeps its
+own tasks, handlers, templates and defaults where needed. Shared controller paths
+and chart pins are in `ansible/vars.yml`; collection pins are in
+`ansible/requirements.yml` (also included in the pinned Ansible package).
+
+Roles cover host setup, CA trust, HAProxy, hardening, kubelet serving certificates,
+image builds/imports, platform installation and verification. Kubespray remains
+the upstream Kubernetes role implementation.
 
 ## Entry points
 
 | Playbook | Purpose |
 | --- | --- |
+| `ansible/site.yml` | Cluster, images and platform in order; host setup/VM creation are prerequisites |
 | `ansible/setup-host.yml` | Host packages, Vagrant, libvirt and user groups; requires sudo |
 | `ansible/cluster.yml` | SSH check, optional VM CA, HAProxy, pinned Kubespray and hardening |
 | `ansible/images.yml` | Build content-tagged images, export once and import missing worker images |
@@ -17,10 +33,10 @@ Bootstrap the controller and host as shown in the README. After creating the VMs
 
 ```sh
 bash scripts/prepare-kubespray.sh
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/cluster.yml
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml
+ansible-playbook -i inventory/lab/hosts.yml ansible/cluster.yml
+ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
+ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml
+ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml
 ```
 
 Before first GitOps bootstrap, copy the generated image names from
@@ -82,3 +98,13 @@ Host setup and the full Kubespray entry point were syntax-checked, not rerun wit
 host package changes or a clean cluster rebuild. The archive was explicitly imported on both existing workers with
 `-e force_image_import=true`, then a normal run verified the zero-change skip path.
 A fresh-worker rebuild remains unverified. The existing single-LB/control-plane limitations remain.
+
+The role refactor preserves the phase entry points and their maintenance tags.
+`site.yml` is the combined installation entry point; verification stays separate
+because it deliberately exercises the running services.
+
+The role-based entry points were tested against the existing lab on 2026-11-16.
+Platform, image, HAProxy and hardening runs reported zero changes. The complete
+verification passed, including firing/resolved notifications and test-resource
+cleanup. Local CI checks and the combined `site.yml` syntax check passed. Host
+setup and a clean cluster rebuild remain untested.

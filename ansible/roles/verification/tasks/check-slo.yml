@@ -31,7 +31,7 @@
 
     - name: Run the matching promtool image on the Prometheus node
       kubernetes.core.k8s:
-        definition: "{{ lookup('template', 'templates/slo-test-job.yml.j2') | from_yaml }}"
+        definition: "{{ lookup('template', 'slo-test-job.yml.j2') | from_yaml }}"
 
     - name: Wait for promtool to finish
       kubernetes.core.k8s_info:

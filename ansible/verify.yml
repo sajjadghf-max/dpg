@@ -12,25 +12,5 @@
       kubeconfig: "{{ kubeconfig }}"
     kubernetes.core.k8s_exec:
       kubeconfig: "{{ kubeconfig }}"
-  tasks:
-    - name: Verify cluster networking
-      ansible.builtin.import_tasks: tasks/check-cluster.yml
-      tags: [cluster]
-    - name: Verify HTTPS, real IP and ingress boundaries
-      ansible.builtin.import_tasks: tasks/check-ingress.yml
-      tags: [ingress]
-    - name: Verify application NetworkPolicies
-      ansible.builtin.import_tasks: tasks/check-app.yml
-      tags: [app]
-    - name: Verify monitoring and Grafana authentication
-      ansible.builtin.import_tasks: tasks/check-monitoring.yml
-      tags: [monitoring]
-    - name: Verify Argo CD reconciliation
-      ansible.builtin.import_tasks: tasks/check-gitops.yml
-      tags: [gitops]
-    - name: Verify SLO rule behavior with promtool
-      ansible.builtin.import_tasks: tasks/check-slo.yml
-      tags: [observability]
-    - name: Verify SLO rules, dashboards and notification delivery
-      ansible.builtin.import_tasks: tasks/check-observability.yml
-      tags: [observability]
+  roles:
+    - verification

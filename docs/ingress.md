@@ -15,8 +15,8 @@ allows controller choice; community ingress-nginx was
 After the app is deployed:
 
 ```sh
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags ingress
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags ingress
+ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags ingress
+ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags ingress
 curl --noproxy '*' --resolve app.dpg.test:443:192.168.56.10 \
   --cacert .state/tls/ca.crt https://app.dpg.test/
 ```

@@ -8,7 +8,7 @@ in the Helm chart and tested through the full LB path; see [ingress](ingress.md)
 Build/import with Ansible and check the images locally with Docker:
 
 ```sh
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
+ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
 bash scripts/check-images.sh
 ```
 
@@ -61,9 +61,9 @@ the bounded 3× comparison is recorded in [capacity](capacity.md).
 After cluster provisioning, install Metrics Server and deploy the chart:
 
 ```sh
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags metrics
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
-.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags app
+ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags metrics
+ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
+ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags app
 ```
 
 Metrics Server uses the upstream 3.14.0 chart (server 0.9.0), downloaded with a
@@ -90,7 +90,7 @@ policies allow DNS, NGINX-to-PHP FastCGI, and the Helm test client. Additional
 NGINX sources are set with `nginx.ingressFrom` for the ingress controller.
 The public endpoint is described in [ingress and TLS](ingress.md).
 
-`.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags app` checks JSON, health/readiness, allowed traffic,
+`ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags app` checks JSON, health/readiness, allowed traffic,
 and blocked direct PHP/unauthorized NGINX connections. Test logs are collected before the temporary pods are removed, including on failure. Metrics collection, both HPA
 CPU targets, PDB availability, and cross-worker placement were checked. The bounded traffic test is separate from maximum-capacity measurement.
 Pod eviction was tested; node-failure recovery remains unverified.

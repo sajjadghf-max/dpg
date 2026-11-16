@@ -1,0 +1,21 @@
+- name: Prepare controller paths and discover application ownership
+  ansible.builtin.import_tasks: platform-context.yml
+  tags: [always]
+- name: Configure Metrics Server
+  ansible.builtin.import_tasks: metrics.yml
+  tags: [metrics]
+- name: Bootstrap the application only when Argo CD does not own it
+  ansible.builtin.import_tasks: application.yml
+  tags: [app]
+- name: Configure ingress and application TLS
+  ansible.builtin.import_tasks: ingress.yml
+  tags: [ingress]
+- name: Configure monitoring and Grafana
+  ansible.builtin.import_tasks: monitoring.yml
+  tags: [monitoring]
+- name: Configure dashboard, SLOs and alert routing
+  ansible.builtin.import_tasks: observability.yml
+  tags: [observability]
+- name: Configure Argo CD
+  ansible.builtin.import_tasks: gitops.yml
+  tags: [gitops]
