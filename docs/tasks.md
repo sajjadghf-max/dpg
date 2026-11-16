@@ -14,7 +14,7 @@ Checked items are complete. Runtime results will be recorded only after testing.
 - [x] Add Kubespray inventory, API HAProxy playbook, and provisioning commands.
 - [x] Automate VM creation and Kubernetes provisioning, including swap, kernel, sysctl, and cgroups.
 - [x] Configure HAProxy for API and application traffic.
-- [ ] Configure VM firewall rules, SSH restrictions, and unused-service hardening (deferred).
+- [x] Configure and verify VM firewall rules, SSH restrictions, and unused-service hardening through Ansible.
 - [x] Omit Keepalived as agreed; document the departure and single-LB limitation.
 - [x] Verify API readiness, DNS, Service routing, and cross-node networking.
 - [ ] Verify a clean rebuild and complete repeated provisioning.

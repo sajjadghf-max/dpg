@@ -164,8 +164,9 @@ The API readiness check passes through HAProxy. Calico and CoreDNS are healthy.
 DNS and Service HTTP checks pass from both workers, and direct pod HTTP works
 in both directions across workers. The temporary check resources are removed.
 
-Firewall and SSH hardening are still pending. A clean rebuild and a complete
-repeat-provisioning check are also pending.
+VM firewall, SSH and unused-service hardening are applied through
+[Ansible](docs/hardening.md). A clean rebuild and a complete repeat-provisioning
+check are still pending.
 
 Remaining work is tracked in [docs/tasks.md](docs/tasks.md).
 
@@ -211,8 +212,8 @@ Resolve both to `192.168.56.10` and use `.state/tls/ca.crt`. Grafana's user is
 `admin`; retrieve its password from `.state/monitoring/admin-password`. Argo CD
 Core has no public UI. See the access and diagnostic commands in the runbook.
 
-Hardening, a clean rebuild, full repeated provisioning, and a restore drill remain
-unverified or deferred. The backup/on-call targets are proposals, not operational
+A clean rebuild, full repeated provisioning, and a restore drill remain
+unverified. The backup/on-call targets are proposals, not operational
 commitments. This lab does not claim infrastructure HA or payments compliance.
 
 The hosted [Validate run](https://github.com/sajjadghf-max/dpg/actions/runs/43722750727)

@@ -8,8 +8,8 @@ namespace denies traffic by default and admits the documented ingress, FastCGI,
 DNS, test, and metrics paths. TLS and forwarded client IPs are tested end to end.
 Images, tools, and charts are version/digest/checksum pinned.
 
-This is not a production security assessment. VM firewall rules, SSH restrictions,
-and unused-service hardening were explicitly deferred. Platform namespaces are
+This is not a production security assessment. VM firewall rules, key-only SSH restrictions,
+and unused-service hardening are applied through [Ansible](hardening.md). Platform namespaces are
 not all under default-deny policy. The Argo controller retains upstream cluster
 permissions even though its AppProject limits this application's destinations and
 kinds. CI does not currently scan images for vulnerabilities. Review these gaps

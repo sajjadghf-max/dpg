@@ -1,0 +1,56 @@
+- name: Verify VM hardening
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Read effective SSH settings
+      ansible.builtin.command: /usr/sbin/sshd -T
+      register: ssh_settings
+      changed_when: false
+
+    - name: Check effective authentication policy
+      ansible.builtin.assert:
+        that:
+          - "'permitrootlogin no' in ssh_settings.stdout_lines"
+          - "'passwordauthentication no' in ssh_settings.stdout_lines"
+          - "'kbdinteractiveauthentication no' in ssh_settings.stdout_lines"
+          - "'authenticationmethods publickey' in ssh_settings.stdout_lines"
+          - "'allowusers vagrant' in ssh_settings.stdout_lines"
+
+    - name: Inspect running host firewall
+      ansible.builtin.command: /usr/sbin/nft list table inet dpg_host
+      register: firewall
+      changed_when: false
+
+    - name: Check default deny policy
+      ansible.builtin.assert:
+        that: "'policy drop' in firewall.stdout"
+
+    - name: Verify the host cannot reach node management endpoints directly
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: "{{ item }}"
+        state: stopped
+        connect_timeout: 1
+        timeout: 4
+      loop: [9100, 10250]
+      delegate_to: localhost
+      become: false
+      when: inventory_hostname in groups['k8s_cluster']
+
+    - name: Verify nodes cannot SSH into the control plane
+      ansible.builtin.wait_for:
+        host: 192.168.56.11
+        port: 22
+        state: stopped
+        connect_timeout: 1
+        timeout: 4
+      when: inventory_hostname in groups['kube_node']
+
+    - name: Verify nodes can reach the API through the load balancer
+      ansible.builtin.wait_for:
+        host: 192.168.56.10
+        port: 6443
+        state: started
+        timeout: 10
+      when: inventory_hostname in groups['k8s_cluster']

@@ -18,6 +18,8 @@ inventory=inventory/lab/hosts.yml
 .venv/bin/ansible-playbook -vvv -i "$inventory" --become --limit k8s_cluster \
   vendor/kubespray/cluster.yml
 
+.venv/bin/ansible-playbook -i "$inventory" ansible/hardening.yml
+
 export KUBECONFIG="$project_dir/.state/artifacts/admin.conf"
 kubectl="$project_dir/.state/artifacts/kubectl"
 "$kubectl" get --raw=/readyz
