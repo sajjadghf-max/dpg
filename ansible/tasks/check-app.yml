@@ -1,0 +1,75 @@
+- name: Read Argo application settings
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    namespace: argocd
+    name: app
+  register: check_app_argo
+
+- name: Read Helm values before GitOps takeover
+  kubernetes.core.helm_info:
+    kubeconfig: "{{ kubeconfig }}"
+    name: app
+    release_namespace: dpg-app
+  register: check_app_release
+  when: check_app_argo.resources | default([]) | length == 0
+
+- name: Render chart-owned network checks with live image settings
+  kubernetes.core.helm_template:
+    name: app
+    chart_ref: "{{ project_dir }}/charts/dpg-app"
+    release_namespace: dpg-app
+    show_only: [templates/tests/network.yaml]
+    release_values: "{{ check_app_argo.resources[0].spec.source.helm.valuesObject if check_app_argo.resources | default([]) | length > 0 else check_app_release.status['values'] }}"
+  register: network_tests
+  changed_when: false
+
+- name: Run disposable allowed and denied clients
+  block:
+    - name: Clear previous completed chart test pods
+      kubernetes.core.k8s:
+        kind: Pod
+        namespace: dpg-app
+        name: "{{ item }}"
+        state: absent
+        wait: true
+      loop: [app-test-allowed, app-test-denied]
+
+    - name: Create network test pods
+      kubernetes.core.k8s:
+        namespace: dpg-app
+        definition: "{{ network_tests.stdout | from_yaml_all | list }}"
+
+    - name: Wait for successful allowed and denied checks
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: dpg-app
+        name: "{{ item }}"
+      register: network_test_result
+      until: network_test_result.resources | length == 1 and network_test_result.resources[0].status.phase == 'Succeeded'
+      retries: 40
+      delay: 3
+      loop: [app-test-allowed, app-test-denied]
+  always:
+    - name: Collect test output
+      ansible.builtin.command:
+        argv: ["{{ kubectl }}", "--kubeconfig={{ kubeconfig }}", -n, dpg-app, logs, "{{ item }}"]
+      loop: [app-test-allowed, app-test-denied]
+      register: network_test_logs
+      changed_when: false
+      failed_when: false
+
+    - name: Show network test results
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines | default(item.stderr_lines) }}"
+      loop: "{{ network_test_logs.results }}"
+      loop_control: {label: "{{ item.item }}"}
+
+    - name: Remove disposable network test pods
+      kubernetes.core.k8s:
+        kind: Pod
+        namespace: dpg-app
+        name: "{{ item }}"
+        state: absent
+        wait: true
+      loop: [app-test-allowed, app-test-denied]

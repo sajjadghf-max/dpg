@@ -1,0 +1,46 @@
+- name: Create private controller state directories
+  ansible.builtin.file:
+    path: "{{ state_dir }}/{{ item }}"
+    state: directory
+    mode: "0700"
+  loop: [charts, tls, monitoring, argocd, gitops, helm-plugins]
+
+- name: Download pinned Helm diff plugin for reliable local-chart comparisons
+  ansible.builtin.get_url:
+    url: https://github.com/databus23/helm-diff/releases/download/v3.12.5/helm-diff-linux-amd64.tgz
+    dest: "{{ state_dir }}/charts/helm-diff-linux-amd64-3.12.5.tgz"
+    checksum: sha256:f0fc45883db976e3fabecbb38324e9d44339f8de471f015dbd632b2b1d16e097
+    mode: "0600"
+    timeout: 60
+
+- name: Unpack Helm diff in project-local plugin directory
+  ansible.builtin.unarchive:
+    src: "{{ state_dir }}/charts/helm-diff-linux-amd64-3.12.5.tgz"
+    dest: "{{ state_dir }}/helm-plugins"
+    creates: "{{ state_dir }}/helm-plugins/diff/plugin.yaml"
+
+- name: Discover Argo CD application without hiding API failures
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    namespace: argocd
+    name: app
+  register: argo_app
+
+- name: Read existing application Helm values for bootstrap compatibility
+  kubernetes.core.helm_info:
+    kubeconfig: "{{ kubeconfig }}"
+    name: app
+    release_namespace: dpg-app
+  register: app_release
+  when: argo_app.resources | default([]) | length == 0
+
+- name: Select the current application settings
+  ansible.builtin.set_fact:
+    argo_owns_app: "{{ argo_app.resources | default([]) | length > 0 }}"
+    app_settings: "{{ argo_app.resources[0].spec.source.helm.valuesObject if argo_app.resources | default([]) | length > 0 else app_release.status.get('values', {}) if app_release.status is defined else {} }}"
+
+- name: Read imported image settings on initial bootstrap
+  ansible.builtin.set_fact:
+    app_settings: "{{ lookup('file', state_dir ~ '/app-images.json') | from_json }}"
+  when: app_settings | length == 0

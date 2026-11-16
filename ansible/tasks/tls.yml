@@ -1,0 +1,105 @@
+- name: Create private CA key without replacing an existing key
+  community.crypto.openssl_privatekey:
+    path: "{{ state_dir }}/tls/ca.key"
+    type: RSA
+    size: 2048
+    mode: "0600"
+
+- name: Create the CA signing request
+  community.crypto.openssl_csr:
+    path: "{{ state_dir }}/tls/ca.csr"
+    privatekey_path: "{{ state_dir }}/tls/ca.key"
+    common_name: dpg lab CA
+    basic_constraints: ['CA:TRUE']
+    basic_constraints_critical: true
+    key_usage: [keyCertSign, cRLSign]
+    key_usage_critical: true
+
+- name: Preserve an existing CA certificate
+  ansible.builtin.stat:
+    path: "{{ state_dir }}/tls/ca.crt"
+  register: ca_certificate
+
+- name: Sign a new local CA only on initial bootstrap
+  community.crypto.x509_certificate:
+    path: "{{ state_dir }}/tls/ca.crt"
+    privatekey_path: "{{ state_dir }}/tls/ca.key"
+    csr_path: "{{ state_dir }}/tls/ca.csr"
+    provider: selfsigned
+    selfsigned_not_after: +365d
+    mode: "0644"
+  when: not ca_certificate.stat.exists
+
+- name: Inspect CA validity
+  community.crypto.x509_certificate_info:
+    path: "{{ state_dir }}/tls/ca.crt"
+    valid_at: {now: '+0s'}
+  register: ca_info
+
+- name: Inspect CA private key
+  community.crypto.openssl_privatekey_info:
+    path: "{{ state_dir }}/tls/ca.key"
+  register: ca_key_info
+  no_log: true
+
+- name: Require a valid CA and matching private key
+  ansible.builtin.assert:
+    that:
+      - ca_info.valid_at.now
+      - ca_info.public_key == ca_key_info.public_key
+    fail_msg: Local CA is expired or mismatched; rotate it deliberately rather than silently replacing trust.
+
+- name: Create server private key
+  community.crypto.openssl_privatekey:
+    path: "{{ state_dir }}/tls/{{ tls_name }}.key"
+    type: RSA
+    size: 2048
+    mode: "0600"
+
+- name: Create server signing request
+  community.crypto.openssl_csr:
+    path: "{{ state_dir }}/tls/{{ tls_name }}.csr"
+    privatekey_path: "{{ state_dir }}/tls/{{ tls_name }}.key"
+    common_name: "{{ tls_name }}.dpg.test"
+    subject_alt_name: ["DNS:{{ tls_name }}.dpg.test"]
+    basic_constraints: ['CA:FALSE']
+    basic_constraints_critical: true
+    key_usage: [digitalSignature, keyEncipherment]
+    key_usage_critical: true
+    extended_key_usage: [serverAuth]
+
+- name: Check whether the server certificate exists
+  ansible.builtin.stat:
+    path: "{{ state_dir }}/tls/{{ tls_name }}.crt"
+  register: server_certificate
+
+- name: Inspect the server certificate renewal window
+  community.crypto.x509_certificate_info:
+    path: "{{ state_dir }}/tls/{{ tls_name }}.crt"
+    valid_at: {renewal: '+7d'}
+  register: server_info
+  when: server_certificate.stat.exists
+
+- name: Sign or renew the server certificate
+  community.crypto.x509_certificate:
+    path: "{{ state_dir }}/tls/{{ tls_name }}.crt"
+    csr_path: "{{ state_dir }}/tls/{{ tls_name }}.csr"
+    provider: ownca
+    ownca_path: "{{ state_dir }}/tls/ca.crt"
+    ownca_privatekey_path: "{{ state_dir }}/tls/ca.key"
+    ownca_not_after: +90d
+    force: "{{ server_certificate.stat.exists and not server_info.valid_at.renewal }}"
+    mode: "0644"
+
+- name: Apply TLS Secret without logging private material
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata: {name: "{{ tls_name }}-tls", namespace: "{{ tls_namespace }}"}
+      type: kubernetes.io/tls
+      data:
+        tls.crt: "{{ lookup('file', state_dir ~ '/tls/' ~ tls_name ~ '.crt') | b64encode }}"
+        tls.key: "{{ lookup('file', state_dir ~ '/tls/' ~ tls_name ~ '.key') | b64encode }}"
+  no_log: true

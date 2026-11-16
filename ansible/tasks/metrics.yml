@@ -1,0 +1,29 @@
+- name: Identify bootstrap nodes still waiting for a serving certificate
+  ansible.builtin.set_fact:
+    csr_wait_nodes: "{{ groups['k8s_cluster'] | map('extract', hostvars) | selectattr('kubelet_serving_certificate.stat.exists', 'equalto', false) | map(attribute='inventory_hostname') | list }}"
+
+- name: Validate and approve only inventory-matching serving CSRs
+  ansible.builtin.command:
+    argv: "{{ [ansible_playbook_python, project_dir ~ '/scripts/approve-kubelet-csrs.py'] + csr_wait_nodes }}"
+  register: csr_approval
+  changed_when: "'approved' in csr_approval.stdout"
+
+- name: Download Metrics Server chart
+  ansible.builtin.include_tasks: chart.yml
+  vars: {chart_name: metrics}
+
+- name: Reconcile Metrics Server
+  kubernetes.core.helm:
+    name: metrics-server
+    chart_ref: "{{ state_dir }}/charts/{{ charts.metrics.file }}"
+    release_namespace: kube-system
+    values_files: ["{{ project_dir }}/platform/metrics-server/values.yaml"]
+
+- name: Wait for the verified kubelet metrics API
+  kubernetes.core.k8s_info:
+    api_version: apiregistration.k8s.io/v1
+    kind: APIService
+    name: v1beta1.metrics.k8s.io
+    wait: true
+    wait_condition: {type: Available, status: 'True'}
+    wait_timeout: 120

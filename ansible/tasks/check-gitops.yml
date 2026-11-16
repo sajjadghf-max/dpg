@@ -1,0 +1,55 @@
+- name: Wait for Argo CD to report Synced and Healthy
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    namespace: argocd
+    name: app
+  register: gitops_status
+  until: gitops_status.resources | length == 1 and gitops_status.resources[0].status.sync.status == 'Synced' and gitops_status.resources[0].status.health.status == 'Healthy'
+  retries: 90
+  delay: 2
+
+- name: Save the ConfigMap before the harmless drift exercise
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    namespace: dpg-app
+    name: app-trusted-proxies
+  register: original_config
+
+- name: Exercise self-healing with a comment-only change
+  block:
+    - name: Add a harmless NGINX configuration comment
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata: {name: app-trusted-proxies, namespace: dpg-app}
+          data: "{{ original_config.resources[0].data | combine({'trusted-proxies.conf': original_config.resources[0].data['trusted-proxies.conf'] ~ '\n# temporary GitOps drift check\n'}) }}"
+
+    - name: Request immediate Argo refresh
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: app
+            namespace: argocd
+            annotations: {argocd.argoproj.io/refresh: hard}
+
+    - name: Wait for Argo to restore the original data
+      kubernetes.core.k8s_info:
+        kind: ConfigMap
+        namespace: dpg-app
+        name: app-trusted-proxies
+      register: healed_config
+      until: healed_config.resources[0].data == original_config.resources[0].data
+      retries: 90
+      delay: 2
+  always:
+    - name: Restore original data even if the exercise fails
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata: {name: app-trusted-proxies, namespace: dpg-app}
+          data: "{{ original_config.resources[0].data }}"

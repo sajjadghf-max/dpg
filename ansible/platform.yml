@@ -1,0 +1,45 @@
+- name: Configure kubelet serving certificate requests
+  ansible.builtin.import_playbook: kubelet-serving.yml
+  tags: [metrics]
+
+- name: Configure the Kubernetes platform from the controller
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files: [vars.yml]
+  environment:
+    HELM_PLUGINS: "{{ state_dir }}/helm-plugins"
+    # Server dry-run lets chart lookup reuse existing TLS Secrets.
+    HELM_DIFF_USE_UPGRADE_DRY_RUN: "true"
+  module_defaults:
+    group/kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig }}"
+    kubernetes.core.helm:
+      kubeconfig: "{{ kubeconfig }}"
+      wait: true
+      atomic: true
+      timeout: 600s
+      reset_values: true
+      history_max: 5
+  tasks:
+    - name: Prepare controller paths and discover application ownership
+      ansible.builtin.import_tasks: tasks/platform-context.yml
+      tags: [always]
+    - name: Configure Metrics Server
+      ansible.builtin.import_tasks: tasks/metrics.yml
+      tags: [metrics]
+    - name: Bootstrap the application only when Argo CD does not own it
+      ansible.builtin.import_tasks: tasks/application.yml
+      tags: [app]
+    - name: Configure ingress and application TLS
+      ansible.builtin.import_tasks: tasks/ingress.yml
+      tags: [ingress]
+    - name: Configure monitoring and Grafana
+      ansible.builtin.import_tasks: tasks/monitoring.yml
+      tags: [monitoring]
+    - name: Configure dashboard, SLOs and alert routing
+      ansible.builtin.import_tasks: tasks/observability.yml
+      tags: [observability]
+    - name: Configure Argo CD
+      ansible.builtin.import_tasks: tasks/gitops.yml
+      tags: [gitops]

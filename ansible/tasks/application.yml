@@ -1,0 +1,8 @@
+- name: Bootstrap the application with imported images
+  kubernetes.core.helm:
+    name: app
+    chart_ref: "{{ project_dir }}/charts/dpg-app"
+    release_namespace: dpg-app
+    create_namespace: true
+    release_values: "{{ app_settings }}"
+  when: not argo_owns_app

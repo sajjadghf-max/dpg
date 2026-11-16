@@ -1,0 +1,66 @@
+- name: Verify HTTPS and reject spoofed forwarded client headers
+  ansible.builtin.command:
+    argv:
+      - curl
+      - --noproxy
+      - '*'
+      - --interface
+      - 192.168.56.1
+      - --connect-timeout
+      - '5'
+      - --max-time
+      - '15'
+      - --cacert
+      - "{{ state_dir }}/tls/ca.crt"
+      - --resolve
+      - app.dpg.test:443:192.168.56.10
+      - --fail
+      - --silent
+      - --show-error
+      - -H
+      - 'X-Forwarded-For: 203.0.113.99, 198.51.100.99'
+      - -H
+      - 'X-Real-IP: 203.0.113.99'
+      - https://app.dpg.test/
+  register: https_response
+  changed_when: false
+  retries: 3
+  delay: 2
+  until: https_response.rc == 0
+  loop: [1, 2, 3, 4, 5, 6]
+
+- name: Assert the application reports the actual host client IP
+  ansible.builtin.assert:
+    that:
+      - (item.stdout | from_json).service == 'digipay-sre-lab'
+      - (item.stdout | from_json).client_ip == '192.168.56.1'
+  loop: "{{ https_response.results }}"
+  loop_control: {label: "request {{ item.item }}"}
+
+- name: Check public health, readiness and protected status endpoints
+  ansible.builtin.command:
+    argv: [curl, --noproxy, '*', --interface, 192.168.56.1, --connect-timeout, '5', --max-time, '15', --cacert, "{{ state_dir }}/tls/ca.crt", --resolve, 'app.dpg.test:443:192.168.56.10', --silent, --show-error, --write-out, '\n%{http_code}', "https://app.dpg.test/{{ item.path }}"]
+  loop:
+    - {path: healthz, status: '200', body: ok}
+    - {path: readyz, status: '200', body: ready}
+    - {path: nginx-status, status: '404'}
+    - {path: fpm-status, status: '404'}
+  register: endpoint_check
+  changed_when: false
+  failed_when: endpoint_check.rc != 0 or endpoint_check.stdout.splitlines()[-1] != item.status or (item.body is defined and endpoint_check.stdout.splitlines()[0] != item.body)
+
+- name: Verify HTTP redirects to HTTPS
+  ansible.builtin.command:
+    argv: [curl, --noproxy, '*', --interface, 192.168.56.1, --connect-timeout, '5', --max-time, '15', --resolve, 'app.dpg.test:80:192.168.56.10', --silent, --show-error, --dump-header, '-', --output, /dev/null, 'http://app.dpg.test/']
+  register: redirect_check
+  changed_when: false
+  failed_when: >-
+    redirect_check.rc != 0 or not (redirect_check.stdout is search('HTTP/[0-9.]+ (301|308) ')) or not (redirect_check.stdout | lower is search('location: https://app.dpg.test/'))
+
+- name: Verify direct worker ingress access remains blocked
+  ansible.builtin.command:
+    argv: [curl, --noproxy, '*', --interface, 192.168.56.1, --connect-timeout, '2', --max-time, '3', --silent, --output, /dev/null, "http://{{ hostvars[item].ip }}:30080/"]
+  loop: "{{ groups['kube_node'] }}"
+  register: bypass_check
+  changed_when: false
+  failed_when: bypass_check.rc == 0

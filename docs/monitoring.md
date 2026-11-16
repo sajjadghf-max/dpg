@@ -1,8 +1,8 @@
 # Monitoring
 
 ```sh
-bash scripts/install-monitoring.sh
-bash scripts/check-monitoring.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags monitoring
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags monitoring
 ```
 
 The installer pins kube-prometheus-stack 93.3.0 and verifies its archive checksum.
@@ -47,15 +47,15 @@ export KUBECONFIG="$PWD/.state/artifacts/admin.conf"
 
 Application exporter ports and Traefik metrics accept only Prometheus pods in
 `monitoring`. The PHP status listener and NGINX status page remain private.
-The installer preserves the application's imported image tags. Subsequent app
-and ingress deployment scripts keep monitoring enabled when the stack exists.
+The platform playbook preserves the application's imported image tags and keeps
+monitoring enabled when the stack exists.
 
 ## Checks
 
-The check script waits for healthy Prometheus targets, confirms both application
+The verification playbook waits for healthy Prometheus targets, confirms both application
 exporters can reach their local processes, and checks kubelet and Traefik scrapes.
 It verifies Grafana's certificate, rejects anonymous API access, and tests the
-admin login without placing the password in process arguments. It also repeats
+admin login without placing the password in process arguments. The full verification playbook also runs
 the application HTTPS/client-IP checks and allowed/denied network tests.
 After Argo CD adoption, the network test pods are rendered from the chart instead
 of using the old Helm release history.

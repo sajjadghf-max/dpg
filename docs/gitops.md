@@ -7,8 +7,8 @@ set the image tags in `gitops/application.yaml` from `.state/app-images.json`
 before installing Argo; do not assume another build has the same image IDs.
 
 ```sh
-bash scripts/install-gitops.sh
-bash scripts/check-gitops.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags gitops
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags gitops
 ```
 
 Argo CD Core 3.6.1 runs the application controller, repo server, and Redis, each
@@ -28,7 +28,7 @@ at install time. The certificate is copied into Argo's GitHub trust ConfigMap,
 not committed or used to disable certificate verification:
 
 ```sh
-GIT_CA_FILE=/path/to/trusted-root.pem bash scripts/install-gitops.sh
+GIT_CA_FILE=/path/to/trusted-root.pem .venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags gitops
 ```
 
 `gitops/project.yaml` permits only this repository and namespaced application
@@ -38,7 +38,7 @@ imported immutable image tags, enables exporters, and skips Helm test hooks.
 Argo polls Git, applies chart changes, repairs drift, and prunes its tracked
 resources after applying replacements. It ignores Deployment replica counts
 because the HPAs own them. TLS Secrets and platform components remain managed
-by their existing setup scripts; they are not owned or pruned by this Application.
+by Ansible; they are not owned or pruned by this Application.
 
 Traefik reports the actual LB address, `192.168.56.10`, in Ingress status so Argo
 can assess Ingress health without bypassing its normal health check.
@@ -46,8 +46,8 @@ can assess Ingress health without bypassing its normal health check.
 Argo uses Helm to render templates, not to operate a Helm release. The old `app`
 release history remains as a bootstrap record and becomes stale after Argo
 changes the workloads. Do not run `helm upgrade`, `rollback`, or `uninstall app`.
-`deploy-app.sh` now refuses to compete with Argo; ingress and monitoring scripts
-preserve Argo's application settings. Network checks render the current chart's
+The platform playbook skips the application Helm release once Argo owns it and
+preserves its live application settings. Network checks render the current chart's
 test pods instead of relying on stale Helm hook history.
 
 ## Changes and rollback
@@ -66,7 +66,7 @@ Images still use the agreed local import workflow; CI does not publish images.
 Build and import on both workers before changing an image reference:
 
 ```sh
-bash scripts/import-app-images.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
 cat .state/app-images.json
 ```
 

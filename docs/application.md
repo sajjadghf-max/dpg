@@ -5,10 +5,10 @@ external dependencies. PHP reads `REMOTE_ADDR` supplied by NGINX; it does not
 parse client-supplied forwarding headers. Trusted ingress proxies are configured
 in the Helm chart and tested through the full LB path; see [ingress](ingress.md).
 
-Build and check locally with Docker:
+Build/import with Ansible and check the images locally with Docker:
 
 ```sh
-bash scripts/build-images.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
 bash scripts/check-images.sh
 ```
 
@@ -61,17 +61,18 @@ the bounded 3× comparison is recorded in [capacity](capacity.md).
 After cluster provisioning, install Metrics Server and deploy the chart:
 
 ```sh
-bash scripts/install-metrics.sh
-bash scripts/deploy-app.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags metrics
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags app
 ```
 
 Metrics Server uses the upstream 3.14.0 chart (server 0.9.0), downloaded with a
 pinned SHA-256. Kubelet serving certificates are signed by the cluster CA. The
 approval script accepts only the three inventory node identities and their
-exact DNS/IP names. Re-run it through `install-metrics.sh` for pending renewals.
+exact DNS/IP names. Re-run the platform playbook with `--tags metrics` for pending renewals.
 TLS verification is enabled both for kubelets and the aggregated Metrics API.
 
-The deployment script builds the images, tags them by image ID, and imports
+The image playbook builds the images, tags them by image ID, and imports
 them into both workers. The chart uses `imagePullPolicy: Never` for this local
 lab; CI validates manifests but does not publish images, as agreed. Unchanged image content keeps the
 same tag. Use the dedicated `dpg-app` namespace because its default-deny policy
@@ -89,8 +90,7 @@ policies allow DNS, NGINX-to-PHP FastCGI, and the Helm test client. Additional
 NGINX sources are set with `nginx.ingressFrom` for the ingress controller.
 The public endpoint is described in [ingress and TLS](ingress.md).
 
-`bash scripts/check-app-network.sh` checks JSON, health/readiness, allowed traffic,
-and blocked direct PHP/unauthorized NGINX connections. Completed test pods retain
-their logs and are replaced on the next test run. Metrics collection, both HPA
+`.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags app` checks JSON, health/readiness, allowed traffic,
+and blocked direct PHP/unauthorized NGINX connections. Test logs are collected before the temporary pods are removed, including on failure. Metrics collection, both HPA
 CPU targets, PDB availability, and cross-worker placement were checked. The bounded traffic test is separate from maximum-capacity measurement.
 Pod eviction was tested; node-failure recovery remains unverified.

@@ -1,0 +1,21 @@
+# Run prepare-kubespray.sh once to install the pinned Ansible environment.
+- name: Verify guest access
+  hosts: lab
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Check SSH and privilege escalation
+      ansible.builtin.ping:
+
+- name: Install optional local CA
+  ansible.builtin.import_playbook: trust-ca.yml
+
+- name: Configure HAProxy
+  ansible.builtin.import_playbook: load-balancer.yml
+
+- name: Provision Kubernetes with the pinned Kubespray checkout
+  ansible.builtin.import_playbook: ../vendor/kubespray/cluster.yml
+  become: true
+
+- name: Apply host hardening
+  ansible.builtin.import_playbook: hardening.yml

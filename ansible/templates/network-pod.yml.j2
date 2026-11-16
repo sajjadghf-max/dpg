@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: check-{{ item }}
+  namespace: dpg-network-check
+  labels: {app: network-check, check-node: '{{ item }}'}
+spec:
+  terminationGracePeriodSeconds: 1
+  nodeSelector: {kubernetes.io/hostname: '{{ item }}'}
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile: {type: RuntimeDefault}
+  containers:
+    - name: check
+      image: docker.io/library/busybox:1.37.0@sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec
+      command: [sh, -ec, 'echo {{ item }} > /tmp/index.html; exec httpd -f -p 8080 -h /tmp']
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities: {drop: [ALL]}
+      resources:
+        requests: {cpu: 10m, memory: 8Mi}
+        limits: {cpu: 100m, memory: 32Mi}
+      readinessProbe:
+        httpGet: {path: /, port: 8080}
+        periodSeconds: 1
+      volumeMounts: [{name: tmp, mountPath: /tmp}]
+  volumes: [{name: tmp, emptyDir: {sizeLimit: 8Mi}}]

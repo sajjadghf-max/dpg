@@ -1,0 +1,6 @@
+- name: Query required healthy metrics
+  ansible.builtin.command:
+    argv: ["{{ kubectl }}", "--kubeconfig={{ kubeconfig }}", get, --raw, "/api/v1/namespaces/monitoring/services/monitoring-kube-prometheus-prometheus:9090/proxy/api/v1/query?query={{ prom_query | urlencode }}"]
+  register: required_metric
+  changed_when: false
+  failed_when: required_metric.rc != 0 or (required_metric.stdout | from_json).data.result | length < 2 or (required_metric.stdout | from_json).data.result | map(attribute='value') | map('last') | reject('equalto', '1') | list | length > 0

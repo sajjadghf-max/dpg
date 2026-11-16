@@ -1,0 +1,20 @@
+- name: Install an optional local lab CA on the VMs
+  hosts: lab
+  become: true
+  gather_facts: false
+  vars:
+    lab_ca_file: "{{ lookup('env', 'LAB_CA_FILE') }}"
+  tasks:
+    - name: Copy optional CA from the controller without committing it
+      ansible.builtin.copy:
+        src: "{{ lab_ca_file }}"
+        dest: /usr/local/share/ca-certificates/lab-company-root.crt
+        owner: root
+        group: root
+        mode: "0644"
+      when: lab_ca_file | length > 0
+      notify: Update CA trust
+  handlers:
+    - name: Update CA trust
+      ansible.builtin.command: update-ca-certificates
+      changed_when: true

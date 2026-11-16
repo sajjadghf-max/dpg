@@ -1,0 +1,68 @@
+- name: Download checksum-verified Argo CD core manifests
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/argoproj/argo-cd/v3.6.1/manifests/core-install.yaml
+    dest: "{{ state_dir }}/argocd/core-install-v3.6.1.yaml"
+    checksum: sha256:0b38189d6e1fd76ef5c3db10355026c48a02020d82bf21a1a1b5ab16dffe4f3c
+    mode: "0600"
+
+- name: Stage the resource overlay
+  ansible.builtin.copy:
+    src: "{{ project_dir }}/platform/argocd/kustomization.yaml"
+    dest: "{{ state_dir }}/argocd/kustomization.yaml"
+    mode: "0600"
+
+- name: Render Argo CD manifests
+  ansible.builtin.command:
+    argv: ["{{ kubectl }}", kustomize, "{{ state_dir }}/argocd"]
+  register: argo_render
+  changed_when: false
+
+- name: Ensure the Argo CD namespace exists
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata: {name: argocd}
+
+- name: Apply CRDs sequentially to limit API memory pressure
+  kubernetes.core.k8s:
+    definition: "{{ item }}"
+    server_side_apply: {field_manager: dpg-ansible}
+    wait: true
+    wait_condition: {type: Established, status: 'True'}
+    wait_timeout: 120
+  loop: "{{ argo_render.stdout | from_yaml_all | selectattr('kind', 'equalto', 'CustomResourceDefinition') | list }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+
+- name: Reconcile Argo CD workloads and RBAC
+  kubernetes.core.k8s:
+    definition: "{{ argo_render.stdout | from_yaml_all | rejectattr('kind', 'equalto', 'CustomResourceDefinition') | list }}"
+    server_side_apply: {field_manager: dpg-ansible}
+
+- name: Add optional Git server CA without disabling TLS verification
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata: {name: argocd-tls-certs-cm, namespace: argocd}
+      data: {github.com: "{{ lookup('file', git_ca_file) }}"}
+  when: git_ca_file | length > 0
+
+- name: Wait for Argo CD components
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: "{{ item.kind }}"
+    namespace: argocd
+    name: "{{ item.name }}"
+    wait: true
+    wait_timeout: 600
+  loop:
+    - {kind: Deployment, name: argocd-redis}
+    - {kind: Deployment, name: argocd-repo-server}
+    - {kind: StatefulSet, name: argocd-application-controller}
+
+- name: Apply constrained project and application definitions
+  kubernetes.core.k8s:
+    src: "{{ project_dir }}/gitops/{{ item }}.yaml"
+  loop: [project, application]

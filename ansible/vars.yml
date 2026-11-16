@@ -1,0 +1,20 @@
+# Controller-side paths; VM inventory remains in inventory/lab.
+project_dir: "{{ playbook_dir }}/.."
+state_dir: "{{ project_dir }}/.state"
+kubeconfig: "{{ state_dir }}/artifacts/admin.conf"
+kubectl: "{{ state_dir }}/artifacts/kubectl"
+ansible_python_interpreter: "{{ ansible_playbook_python }}"
+git_ca_file: "{{ lookup('env', 'GIT_CA_FILE') }}"
+charts:
+  metrics:
+    file: metrics-server-3.14.0.tgz
+    url: https://github.com/kubernetes-sigs/metrics-server/releases/download/metrics-server-helm-chart-3.14.0/metrics-server-3.14.0.tgz
+    checksum: sha256:c2ca1185c01e6e7f53dd1b7d131f0c9b3fa50e003ed068b784563a1b5a3422a1
+  ingress:
+    file: traefik-42.4.0.tgz
+    url: https://traefik.github.io/charts/traefik/traefik-42.4.0.tgz
+    checksum: sha256:eebfaff03c0f210b6424898ccf7583c9d40291cb9b14644ef3e369be6caeb0f0
+  monitoring:
+    file: kube-prometheus-stack-93.3.0.tgz
+    url: https://github.com/prometheus-community/helm-charts/releases/download/kube-prometheus-stack-93.3.0/kube-prometheus-stack-93.3.0.tgz
+    checksum: sha256:2d40be0b19523cb4fed25b4db09e3ca35f471a06872baf7048b916a62c7af0eb

@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dpg-slo-test
+  namespace: monitoring
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 120
+  template:
+    spec:
+      nodeName: '{{ slo_prom.resources[0].spec.nodeName }}'
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: test
+          image: '{{ slo_prom.resources[0].spec.containers | selectattr("name", "equalto", "prometheus") | map(attribute="image") | first }}'
+          imagePullPolicy: IfNotPresent
+          command: [/bin/promtool, test, rules, /test/slo.test.yaml]
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: rules, mountPath: /test, readOnly: true}
+            - {name: scratch, mountPath: /tmp}
+      volumes:
+        - name: rules
+          configMap: {name: dpg-slo-test}
+        - name: scratch
+          emptyDir: {sizeLimit: 128Mi}

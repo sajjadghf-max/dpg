@@ -1,0 +1,11 @@
+- name: Fetch and verify pinned chart
+  ansible.builtin.get_url:
+    url: "{{ charts[chart_name].url }}"
+    dest: "{{ state_dir }}/charts/{{ charts[chart_name].file }}"
+    checksum: "{{ charts[chart_name].checksum }}"
+    mode: "0600"
+    timeout: 60
+  register: chart_download
+  retries: 3
+  delay: 3
+  until: chart_download is succeeded

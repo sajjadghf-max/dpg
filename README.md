@@ -35,12 +35,27 @@ there is no second load balancer. This departs from the brief's Keepalived
 requirement. We can test application recovery, but cannot claim control-plane
 or load-balancer HA.
 
+## Automation
+
+[Ansible entry points and verification](docs/automation.md). After the cluster and
+images are ready, the complete platform and check commands are:
+
+```sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml
+```
+
+The component commands below use tags for individual steps. Argo CD remains the
+owner of application deployment; rerunning Ansible does not upgrade its Helm release.
+
 ## Host setup
 
 Run on Ubuntu 24.04 amd64 as your normal user:
 
 ```sh
-bash scripts/setup-host.sh
+python3 -m venv .venv
+.venv/bin/python -m pip install ansible==12.3.0 ansible-core==2.19.15
+.venv/bin/ansible-playbook ansible/setup-host.yml --ask-become-pass
 ```
 
 This installs QEMU/libvirt and build dependencies from Ubuntu, Vagrant 2.4.9
@@ -84,12 +99,13 @@ Use `vagrant halt` to stop the VMs and release their memory.
 Once all four VMs are running:
 
 ```sh
-bash scripts/provision-cluster.sh
+bash scripts/prepare-kubespray.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/cluster.yml
 ```
 
-This checks SSH access, configures HAProxy, runs Kubespray, and checks API,
-node, Calico, and CoreDNS readiness. Re-run the same command after an interrupted
-provisioning attempt.
+This checks SSH access, configures HAProxy, runs Kubespray, and applies host
+hardening. Re-run the playbook after an interrupted provisioning attempt.
+Use the verification playbook below to check the resulting cluster.
 
 Kubespray is pinned to v2.32.0, commit
 `9751ea6f63244e433a7a6263d9ecf381e57bb8e9`. The inventory pins Kubernetes 1.36.4,
@@ -112,7 +128,7 @@ Check API readiness, Calico, CoreDNS, in-pod DNS, Service routing, and pod HTTP
 traffic in both directions between the workers:
 
 ```sh
-bash scripts/check-cluster.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags cluster
 ```
 
 The check creates two small BusyBox pods in a temporary namespace and removes
@@ -125,10 +141,10 @@ its old host key with `ssh-keygen -f .state/known_hosts -R <VM-IP>` before provi
 ## Application
 
 ```sh
-bash scripts/build-images.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
 bash scripts/check-images.sh
-bash scripts/install-metrics.sh
-bash scripts/deploy-app.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags metrics
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags app
 ```
 
 See [application settings and checks](docs/application.md) for the endpoints,
@@ -136,8 +152,8 @@ PHP-FPM pool budget, deployment, and test results. The Helm release runs in
 `dpg-app`. Install and check ingress with:
 
 ```sh
-bash scripts/install-ingress.sh
-bash scripts/check-ingress.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags ingress
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags ingress
 ```
 
 See [ingress and TLS](docs/ingress.md) for the local HTTPS command and client-IP path.
@@ -145,8 +161,8 @@ See [ingress and TLS](docs/ingress.md) for the local HTTPS command and client-IP
 ## Monitoring
 
 ```sh
-bash scripts/install-monitoring.sh
-bash scripts/check-monitoring.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags monitoring
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags monitoring
 ```
 
 See [monitoring](docs/monitoring.md) for Grafana access, credentials, storage limits,
@@ -173,9 +189,9 @@ Remaining work is tracked in [docs/tasks.md](docs/tasks.md).
 ### Application dashboard and SLOs
 
 ```sh
-bash scripts/install-observability.sh
-bash scripts/check-observability.sh
-bash scripts/test-slo-rules.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags observability
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags observability
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags observability
 ```
 
 Open **Digipay application** in Grafana (`/d/dpg-application`).
@@ -190,8 +206,8 @@ or during deployment.
 ### GitOps and CI
 
 ```sh
-bash scripts/install-gitops.sh
-bash scripts/check-gitops.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags gitops
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags gitops
 bash scripts/setup-validation.sh
 bash scripts/validate.sh
 ```

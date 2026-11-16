@@ -1,0 +1,105 @@
+- name: Write private Grafana authentication file
+  ansible.builtin.copy:
+    dest: "{{ state_dir }}/monitoring/netrc"
+    content: "machine grafana.dpg.test login admin password {{ lookup('file', state_dir ~ '/monitoring/admin-password') | trim }}\n"
+    mode: "0600"
+  no_log: true
+
+
+- name: Read provisioned Grafana dashboard through verified HTTPS
+  ansible.builtin.command:
+    argv: [curl, --fail, --silent, --show-error, --noproxy, '*', --interface, 192.168.56.1, --connect-timeout, '5', --max-time, '15', --cacert, "{{ state_dir }}/tls/ca.crt", --resolve, 'grafana.dpg.test:443:192.168.56.10', --netrc-file, "{{ state_dir }}/monitoring/netrc", 'https://grafana.dpg.test/api/dashboards/uid/dpg-application']
+  register: dashboard_result
+  changed_when: false
+
+- name: Check all dashboard panels are present
+  ansible.builtin.assert:
+    that: (dashboard_result.stdout | from_json).dashboard.panels | length == 14
+
+- name: Check each dashboard query is accepted
+  ansible.builtin.command:
+    argv: ["{{ kubectl }}", "--kubeconfig={{ kubeconfig }}", get, --raw, "/api/v1/namespaces/monitoring/services/monitoring-kube-prometheus-prometheus:9090/proxy/api/v1/query?query={{ item.expr | urlencode }}"]
+  loop: "{{ (dashboard_result.stdout | from_json).dashboard.panels | map(attribute='targets') | flatten }}"
+  loop_control: {label: "{{ item.expr }}"}
+  register: dashboard_query
+  changed_when: false
+  failed_when: dashboard_query.rc != 0 or (dashboard_query.stdout | from_json).status != 'success'
+
+- name: Check SLO recording and alert rule health
+  ansible.builtin.command:
+    argv: ["{{ kubectl }}", "--kubeconfig={{ kubeconfig }}", get, --raw, '/api/v1/namespaces/monitoring/services/monitoring-kube-prometheus-prometheus:9090/proxy/api/v1/rules']
+  register: slo_rule_health
+  changed_when: false
+  failed_when: slo_rule_health.rc != 0 or ((slo_rule_health.stdout | from_json).data.groups | selectattr('name', 'equalto', 'dpg.slo') | list | length != 1) or ((slo_rule_health.stdout | from_json).data.groups | selectattr('name', 'equalto', 'dpg.slo') | first).rules | rejectattr('health', 'equalto', 'ok') | list | length > 0
+
+- name: Require the synthetic notification rule name to be unused
+  kubernetes.core.k8s_info:
+    api_version: monitoring.coreos.com/v1
+    kind: PrometheusRule
+    namespace: monitoring
+    name: dpg-notification-test
+  register: existing_notification_rule
+
+- name: Refuse to interrupt another notification check
+  ansible.builtin.assert:
+    that: existing_notification_rule.resources | length == 0
+
+- name: Choose a unique synthetic notification identifier
+  ansible.builtin.set_fact:
+    notification_alert: "DpgNotificationTest{{ now(utc=true, fmt='%Y%m%d%H%M%S') }}"
+
+- name: Test firing and resolved notification delivery without an outage
+  block:
+    - name: Create synthetic alert
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: monitoring.coreos.com/v1
+          kind: PrometheusRule
+          metadata:
+            name: dpg-notification-test
+            namespace: monitoring
+            labels: {release: monitoring}
+          spec:
+            groups:
+              - name: dpg.notification-test
+                rules:
+                  - alert: "{{ notification_alert }}"
+                    expr: vector(1)
+                    labels: {scope: dpg, severity: info}
+                    annotations: {summary: 'Synthetic notification delivery test; no application failure'}
+
+    - name: Wait for firing notification at the mock receiver
+      ansible.builtin.command:
+        argv: ["{{ kubectl }}", "--kubeconfig={{ kubeconfig }}", -n, monitoring, logs, deployment/dpg-alert-receiver, --since=5m]
+      register: firing_log
+      changed_when: false
+      until: firing_log.rc == 0 and ('"status":"firing","alertname":"' ~ notification_alert ~ '"') in firing_log.stdout
+      retries: 60
+      delay: 3
+
+    - name: Resolve the alert before deleting its rule
+      kubernetes.core.k8s_json_patch:
+        kubeconfig: "{{ kubeconfig }}"
+        api_version: monitoring.coreos.com/v1
+        kind: PrometheusRule
+        namespace: monitoring
+        name: dpg-notification-test
+        patch:
+          - {op: replace, path: /spec/groups/0/rules/0/expr, value: 'vector(0) > 0'}
+
+    - name: Wait for resolved notification at the mock receiver
+      ansible.builtin.command:
+        argv: ["{{ kubectl }}", "--kubeconfig={{ kubeconfig }}", -n, monitoring, logs, deployment/dpg-alert-receiver, --since=5m]
+      register: resolved_log
+      changed_when: false
+      until: resolved_log.rc == 0 and ('"status":"resolved","alertname":"' ~ notification_alert ~ '"') in resolved_log.stdout
+      retries: 60
+      delay: 3
+  always:
+    - name: Remove only the synthetic notification rule
+      kubernetes.core.k8s:
+        api_version: monitoring.coreos.com/v1
+        kind: PrometheusRule
+        namespace: monitoring
+        name: dpg-notification-test
+        state: absent

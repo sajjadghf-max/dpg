@@ -1,0 +1,3 @@
+# Install into the same virtualenv as the pinned Kubespray requirements.
+kubernetes==36.0.3
+ansible-core==2.19.15

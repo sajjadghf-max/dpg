@@ -1,0 +1,38 @@
+- name: Wait until all Prometheus targets are healthy
+  ansible.builtin.command:
+    argv: ["{{ kubectl }}", "--kubeconfig={{ kubeconfig }}", get, --raw, '/api/v1/namespaces/monitoring/services/monitoring-kube-prometheus-prometheus:9090/proxy/api/v1/targets?state=active']
+  register: prom_targets
+  changed_when: false
+  until: prom_targets.rc == 0 and (prom_targets.stdout | from_json).data.activeTargets | length >= 28 and (prom_targets.stdout | from_json).data.activeTargets | rejectattr('health', 'equalto', 'up') | list | length == 0
+  retries: 60
+  delay: 3
+
+- name: Verify exporter, ingress and kubelet series
+  ansible.builtin.include_tasks: check-query.yml
+  loop:
+    - nginx_up{namespace="dpg-app"}
+    - phpfpm_up{namespace="dpg-app"}
+    - up{namespace="ingress-system"}
+    - up{job="kubelet"}
+  loop_control: {loop_var: prom_query}
+
+- name: Write private Grafana authentication file
+  ansible.builtin.copy:
+    dest: "{{ state_dir }}/monitoring/netrc"
+    content: "machine grafana.dpg.test login admin password {{ lookup('file', state_dir ~ '/monitoring/admin-password') | trim }}\n"
+    mode: "0600"
+  no_log: true
+
+- name: Verify Grafana requires authentication
+  ansible.builtin.command:
+    argv: [curl, --silent, --show-error, --noproxy, '*', --interface, 192.168.56.1, --connect-timeout, '5', --max-time, '15', --cacert, "{{ state_dir }}/tls/ca.crt", --resolve, 'grafana.dpg.test:443:192.168.56.10', --output, /dev/null, --write-out, '%{http_code}', 'https://grafana.dpg.test/api/user']
+  register: grafana_anonymous
+  changed_when: false
+  failed_when: grafana_anonymous.rc != 0 or grafana_anonymous.stdout != '401'
+
+- name: Verify Grafana admin authentication over HTTPS
+  ansible.builtin.command:
+    argv: [curl, --fail, --silent, --show-error, --noproxy, '*', --interface, 192.168.56.1, --connect-timeout, '5', --max-time, '15', --cacert, "{{ state_dir }}/tls/ca.crt", --resolve, 'grafana.dpg.test:443:192.168.56.10', --netrc-file, "{{ state_dir }}/monitoring/netrc", 'https://grafana.dpg.test/api/user']
+  register: grafana_user
+  changed_when: false
+  failed_when: grafana_user.rc != 0 or (grafana_user.stdout | from_json).login != 'admin' or not (grafana_user.stdout | from_json).isGrafanaAdmin

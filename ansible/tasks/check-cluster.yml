@@ -1,0 +1,111 @@
+- name: Check API readiness through HAProxy
+  ansible.builtin.command:
+    argv: ["{{ kubectl }}", "--kubeconfig={{ kubeconfig }}", get, --raw=/readyz]
+  changed_when: false
+
+- name: Wait for each node to be Ready
+  kubernetes.core.k8s_info:
+    kind: Node
+    name: "{{ item }}"
+    wait: true
+    wait_condition: {type: Ready, status: 'True'}
+    wait_timeout: 120
+  loop: "{{ groups['k8s_cluster'] }}"
+
+- name: Wait for Calico rollout
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: DaemonSet
+    namespace: kube-system
+    name: calico-node
+    wait: true
+    wait_timeout: 120
+
+- name: Wait for CoreDNS rollout
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: kube-system
+    name: coredns
+    wait: true
+    wait_timeout: 120
+
+- name: Refuse to reuse an existing network-test namespace
+  kubernetes.core.k8s_info:
+    kind: Namespace
+    name: dpg-network-check
+  register: network_namespace
+
+- name: Require a disposable namespace
+  ansible.builtin.assert:
+    that: network_namespace.resources | length == 0
+
+- name: Exercise DNS, Services and cross-node pod traffic
+  block:
+    - name: Create disposable network namespace
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata: {name: dpg-network-check}
+
+    - name: Create one HTTP test pod on each worker
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', 'templates/network-pod.yml.j2') | from_yaml }}"
+        wait: true
+        wait_timeout: 180
+      loop: "{{ groups['kube_node'] }}"
+
+    - name: Create worker1 test Service
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata: {name: check, namespace: dpg-network-check}
+          spec:
+            selector: {check-node: worker1}
+            ports: [{port: 8080, targetPort: 8080}]
+
+    - name: Resolve Kubernetes DNS from both workers
+      kubernetes.core.k8s_exec:
+        namespace: dpg-network-check
+        pod: "check-{{ item }}"
+        command: nslookup kubernetes.default.svc.cluster.local
+      loop: "{{ groups['kube_node'] }}"
+      changed_when: false
+
+    - name: Reach the HTTP Service from both workers
+      kubernetes.core.k8s_exec:
+        namespace: dpg-network-check
+        pod: "check-{{ item }}"
+        command: wget -qO- -T 5 http://check.dpg-network-check.svc.cluster.local:8080
+      loop: "{{ groups['kube_node'] }}"
+      register: service_http
+      changed_when: false
+      failed_when: service_http.rc != 0 or service_http.stdout | trim != 'worker1'
+
+    - name: Read test pod addresses
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: dpg-network-check
+        label_selectors: [app=network-check]
+      register: network_pods
+
+    - name: Reach the other worker pod directly
+      kubernetes.core.k8s_exec:
+        namespace: dpg-network-check
+        pod: "check-{{ item.spec.nodeName }}"
+        command: "wget -qO- -T 5 http://{{ (network_pods.resources | rejectattr('spec.nodeName', 'equalto', item.spec.nodeName) | first).status.podIP }}:8080"
+      loop: "{{ network_pods.resources }}"
+      loop_control: {label: "{{ item.metadata.name }}"}
+      register: cross_node
+      changed_when: false
+      failed_when: cross_node.rc != 0 or cross_node.stdout | trim != (network_pods.resources | rejectattr('spec.nodeName', 'equalto', item.spec.nodeName) | first).spec.nodeName
+  always:
+    - name: Remove only the namespace created by this check
+      kubernetes.core.k8s:
+        kind: Namespace
+        name: dpg-network-check
+        state: absent
+        wait: true
+        wait_timeout: 120

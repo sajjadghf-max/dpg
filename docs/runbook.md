@@ -42,7 +42,7 @@ Useful bounded diagnostics:
 ```
 
 For certificate renewal, `scripts/approve-kubelet-csrs.py` validates the three
-inventory identities; `install-metrics.sh` invokes it. Never approve every CSR
+inventory identities; the platform playbook's `metrics` tag invokes it. Never approve every CSR
 blindly. In Grafana, use **Digipay application**. To inspect Prometheus locally:
 
 ```sh
@@ -78,9 +78,9 @@ Helm `app` release for upgrade/rollback/uninstall. See [change and on-call polic
 After recovery:
 
 ```sh
-bash scripts/check-ingress.sh
-bash scripts/check-app-network.sh
-bash scripts/check-monitoring.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags ingress
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags app
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags monitoring
 "$K" -n argocd get application app
 ```
 

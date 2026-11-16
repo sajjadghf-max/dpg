@@ -5,8 +5,8 @@ Apply and verify from the checkout:
 ```sh
 .venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/hardening.yml
 .venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/check-hardening.yml
-bash scripts/check-cluster.sh
-bash scripts/check-monitoring.sh
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags cluster
+.venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags monitoring
 ```
 
 The provisioning script runs hardening after Kubespray. The playbook processes one

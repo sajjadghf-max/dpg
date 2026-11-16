@@ -1,0 +1,72 @@
+- name: Read running Prometheus image and node
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: monitoring
+    name: prometheus-monitoring-kube-prometheus-prometheus-0
+  register: slo_prom
+
+- name: Require the test Job name to be unused
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    namespace: monitoring
+    name: dpg-slo-test
+  register: existing_slo_job
+
+- name: Refuse to interrupt another test
+  ansible.builtin.assert:
+    that: existing_slo_job.resources | length == 0
+
+- name: Test healthy, burning, low-traffic and no-traffic SLO cases
+  block:
+    - name: Provide rules and fixtures to promtool
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata: {name: dpg-slo-test, namespace: monitoring}
+          data:
+            rules.yaml: "{{ (lookup('file', project_dir ~ '/charts/dpg-observability/files/rules.yaml') | from_yaml).spec | to_nice_yaml }}"
+            slo.test.yaml: "{{ lookup('file', project_dir ~ '/tests/slo.test.yaml') }}"
+
+    - name: Run the matching promtool image on the Prometheus node
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', 'templates/slo-test-job.yml.j2') | from_yaml }}"
+
+    - name: Wait for promtool to finish
+      kubernetes.core.k8s_info:
+        api_version: batch/v1
+        kind: Job
+        namespace: monitoring
+        name: dpg-slo-test
+      register: slo_job
+      until: slo_job.resources[0].status.succeeded | default(0) == 1 or slo_job.resources[0].status.failed | default(0) > 0
+      retries: 40
+      delay: 3
+
+    - name: Require successful rule tests
+      ansible.builtin.assert:
+        that: slo_job.resources[0].status.succeeded | default(0) == 1
+  always:
+    - name: Collect promtool output
+      ansible.builtin.command:
+        argv: ["{{ kubectl }}", "--kubeconfig={{ kubeconfig }}", -n, monitoring, logs, job/dpg-slo-test]
+      register: promtool_output
+      changed_when: false
+      failed_when: false
+
+    - name: Show promtool test results
+      ansible.builtin.debug:
+        msg: "{{ promtool_output.stdout_lines }}"
+
+    - name: Remove the test Job and fixtures
+      kubernetes.core.k8s:
+        api_version: "{{ item.api }}"
+        kind: "{{ item.kind }}"
+        name: dpg-slo-test
+        namespace: monitoring
+        state: absent
+        wait: true
+      loop:
+        - {api: batch/v1, kind: Job}
+        - {api: v1, kind: ConfigMap}

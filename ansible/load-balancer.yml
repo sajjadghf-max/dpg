@@ -3,12 +3,17 @@
   become: true
   gather_facts: false
   tasks:
+    - name: Inspect installed packages
+      ansible.builtin.package_facts:
+        manager: auto
+
     - name: Install HAProxy
       ansible.builtin.apt:
         name: haproxy
         state: present
-        update_cache: true
+        update_cache: "{{ 'haproxy' not in ansible_facts.packages }}"
         cache_valid_time: 3600
+        lock_timeout: 120
 
     - name: Configure TCP forwarding
       ansible.builtin.template:

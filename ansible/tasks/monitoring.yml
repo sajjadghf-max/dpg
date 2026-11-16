@@ -1,0 +1,56 @@
+- name: Ensure the monitoring namespace exists
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata: {name: monitoring}
+
+- name: Generate Grafana credentials once and preserve the existing password
+  ansible.builtin.copy:
+    dest: "{{ state_dir }}/monitoring/admin-password"
+    content: "{{ lookup('password', state_dir ~ '/monitoring/admin-password', length=48, chars=['hexdigits']) }}"
+    mode: "0600"
+  no_log: true
+
+- name: Apply Grafana credential Secret
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata: {name: grafana-admin, namespace: monitoring}
+      type: Opaque
+      data:
+        admin-user: "{{ 'admin' | b64encode }}"
+        admin-password: "{{ lookup('file', state_dir ~ '/monitoring/admin-password') | trim | b64encode }}"
+  no_log: true
+
+- name: Maintain Grafana certificate and Secret
+  ansible.builtin.include_tasks: tls.yml
+  vars: {tls_name: grafana, tls_namespace: monitoring}
+
+- name: Fetch monitoring chart
+  ansible.builtin.include_tasks: chart.yml
+  vars: {chart_name: monitoring}
+
+- name: Discover existing alert receiver
+  kubernetes.core.helm_info:
+    kubeconfig: "{{ kubeconfig }}"
+    name: dpg-observability
+    release_namespace: monitoring
+  register: observability_release
+
+- name: Reconcile monitoring without removing existing alert routing
+  kubernetes.core.helm:
+    name: monitoring
+    chart_ref: "{{ state_dir }}/charts/{{ charts.monitoring.file }}"
+    release_namespace: monitoring
+    timeout: 1200s
+    values_files: "{{ [project_dir ~ '/platform/monitoring/values.yaml'] + ([project_dir ~ '/platform/monitoring/alerting-values.yaml'] if observability_release.status is defined else []) }}"
+
+- name: Enable app exporter monitoring before Argo CD takes ownership
+  kubernetes.core.helm:
+    name: app
+    chart_ref: "{{ project_dir }}/charts/dpg-app"
+    release_namespace: dpg-app
+    release_values: "{{ app_settings | combine({'monitoring': {'enabled': true}}, recursive=true) }}"
+  when: not argo_owns_app

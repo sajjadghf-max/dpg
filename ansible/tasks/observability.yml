@@ -1,0 +1,27 @@
+- name: Reconcile SLO rules, dashboard and internal notification receiver
+  kubernetes.core.helm:
+    name: dpg-observability
+    chart_ref: "{{ project_dir }}/charts/dpg-observability"
+    release_namespace: monitoring
+    release_values:
+      receiver: {image: "{{ app_settings.php.image }}"}
+
+- name: Enable Traefik metrics
+  kubernetes.core.helm:
+    name: traefik
+    chart_ref: "{{ state_dir }}/charts/{{ charts.ingress.file }}"
+    release_namespace: ingress-system
+    skip_crds: true
+    values_files:
+      - "{{ project_dir }}/platform/traefik/values.yaml"
+      - "{{ project_dir }}/platform/monitoring/traefik-values.yaml"
+
+- name: Reconcile final alert routes
+  kubernetes.core.helm:
+    name: monitoring
+    chart_ref: "{{ state_dir }}/charts/{{ charts.monitoring.file }}"
+    release_namespace: monitoring
+    timeout: 1200s
+    values_files:
+      - "{{ project_dir }}/platform/monitoring/values.yaml"
+      - "{{ project_dir }}/platform/monitoring/alerting-values.yaml"

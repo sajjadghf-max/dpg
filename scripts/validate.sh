@@ -41,3 +41,7 @@ import ast,pathlib
 for p in pathlib.Path('scripts').glob('*.py'):ast.parse(p.read_text(),filename=str(p))
 print('OK shell and Python syntax')
 PY
+for playbook in platform verify images setup-host hardening check-hardening trust-ca load-balancer kubelet-serving; do
+  .state/validation-venv/bin/ansible-playbook -i inventory/lab/hosts.yml \
+    "ansible/$playbook.yml" --syntax-check
+done
