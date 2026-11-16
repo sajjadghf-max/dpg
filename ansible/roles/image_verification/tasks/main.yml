@@ -1,0 +1,118 @@
+- name: Allocate unique names for disposable test resources
+  ansible.builtin.set_fact:
+    image_check_id: "{{ now(utc=true, fmt='%Y%m%d%H%M%S%f') }}"
+
+- name: Verify container isolation, endpoints and failure recovery
+  block:
+    - name: Create an isolated test network
+      ansible.builtin.command:
+        argv: [docker, network, create, '{{ image_check_network }}']
+
+    - name: Start the PHP image with production security settings
+      ansible.builtin.command:
+        argv: [docker, run, -d, --name, '{{ image_check_php }}', --network, '{{ image_check_network }}', --network-alias, php-fpm, --memory=256m, --memory-swap=256m, --cpus=0.5, --read-only, --tmpfs, '/tmp:rw,noexec,nosuid,size=16m', --cap-drop=ALL, --security-opt=no-new-privileges, 'dpg-php:lab']
+
+    - name: Start the NGINX image with production security settings
+      ansible.builtin.command:
+        argv: [docker, run, -d, --name, '{{ image_check_nginx }}', --network, '{{ image_check_network }}', --memory=64m, --memory-swap=64m, --cpus=0.25, --read-only, --tmpfs, '/tmp:rw,noexec,nosuid,size=16m', --cap-drop=ALL, --security-opt=no-new-privileges, 'dpg-nginx:lab']
+
+    - name: Wait for PHP readiness through NGINX
+      ansible.builtin.command:
+        argv: [docker, exec, '{{ image_check_nginx }}', wget, -qO-, -T, '3', 'http://127.0.0.1:8080/readyz']
+      register: image_ready
+      until: image_ready.rc == 0 and image_ready.stdout == 'ready'
+      retries: 20
+      delay: 1
+      changed_when: false
+
+    - name: Request JSON with untrusted forwarding headers
+      ansible.builtin.command:
+        argv: [docker, exec, '{{ image_check_nginx }}', wget, -qO-, '--header=X-Forwarded-For: 203.0.113.99', '--header=X-Real-IP: 203.0.113.99', 'http://127.0.0.1:8080/']
+      register: image_response
+      changed_when: false
+
+    - name: Verify response identity and reject forged client IP
+      ansible.builtin.assert:
+        that:
+          - (image_response.stdout | from_json).service == 'digipay-sre-lab'
+          - (image_response.stdout | from_json).client_ip != '203.0.113.99'
+
+    - name: Check health and private exporter endpoints
+      ansible.builtin.command:
+        argv: [docker, exec, '{{ image_check_nginx }}', wget, -qO-, '{{ item.url }}']
+      register: image_endpoint
+      changed_when: false
+      failed_when: image_endpoint.rc != 0 or item.expected not in image_endpoint.stdout
+      loop:
+        - {url: 'http://127.0.0.1:8080/healthz', expected: ok}
+        - {url: 'http://127.0.0.1:8081/nginx-status', expected: 'Active connections:'}
+        - {url: 'http://127.0.0.1:8081/fpm-status', expected: 'pool:'}
+
+    - name: Verify status endpoints and unknown routes are not public
+      ansible.builtin.command:
+        argv: [docker, exec, '{{ image_check_nginx }}', wget, -S, -O, /dev/null, -T, '3', 'http://127.0.0.1:8080/{{ item }}']
+      loop: [nginx-status, fpm-status, missing]
+      register: image_private
+      changed_when: false
+      failed_when: "'404 Not Found' not in image_private.stderr"
+
+    - name: Validate PHP files and pool configuration
+      ansible.builtin.command:
+        argv: '{{ ["docker", "exec", image_check_php] + item }}'
+      loop:
+        - [php, -l, /var/www/html/index.php]
+        - [php, -l, /usr/local/bin/ready.php]
+        - [php, /usr/local/bin/ready.php]
+        - [php-fpm, -t]
+      changed_when: false
+
+    - name: Validate NGINX configuration
+      ansible.builtin.command:
+        argv: [docker, exec, '{{ image_check_nginx }}', nginx, -t]
+      changed_when: false
+
+    - name: Stop PHP to test independent liveness and readiness
+      ansible.builtin.command:
+        argv: [docker, stop, --time, '3', '{{ image_check_php }}']
+
+    - name: Check NGINX health remains available
+      ansible.builtin.command:
+        argv: [docker, exec, '{{ image_check_nginx }}', wget, -qO-, 'http://127.0.0.1:8080/healthz']
+      register: image_health
+      changed_when: false
+      failed_when: image_health.rc != 0 or image_health.stdout != 'ok'
+
+    - name: Check readiness fails when PHP is stopped
+      ansible.builtin.command:
+        argv: [docker, exec, '{{ image_check_nginx }}', wget, -S, -O, /dev/null, -T, '3', 'http://127.0.0.1:8080/readyz']
+      register: image_unready
+      changed_when: false
+      failed_when: "'502 Bad Gateway' not in image_unready.stderr and '504 Gateway' not in image_unready.stderr"
+
+    - name: Restart PHP
+      ansible.builtin.command:
+        argv: [docker, start, '{{ image_check_php }}']
+
+    - name: Verify readiness recovers
+      ansible.builtin.command:
+        argv: [docker, exec, '{{ image_check_nginx }}', wget, -qO-, -T, '3', 'http://127.0.0.1:8080/readyz']
+      register: image_recovered
+      until: image_recovered.rc == 0 and image_recovered.stdout == 'ready'
+      retries: 20
+      delay: 1
+      changed_when: false
+
+  always:
+    - name: Remove temporary containers
+      ansible.builtin.command:
+        argv: [docker, rm, -f, '{{ image_check_nginx }}', '{{ image_check_php }}']
+      register: image_cleanup
+      changed_when: image_cleanup.rc == 0
+      failed_when: image_cleanup.rc != 0 and "No such container" not in image_cleanup.stderr
+
+    - name: Remove temporary network
+      ansible.builtin.command:
+        argv: [docker, network, rm, '{{ image_check_network }}']
+      register: image_network_cleanup
+      changed_when: image_network_cleanup.rc == 0
+      failed_when: image_network_cleanup.rc != 0 and "not found" not in image_network_cleanup.stderr

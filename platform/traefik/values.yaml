@@ -42,7 +42,7 @@ ports:
   web:
     nodePort: 30080
     proxyProtocol:
-      trustedIPs: [192.168.56.10/32]
+      trustedIPs: [192.168.56.13/32, 192.168.56.14/32]
     http:
       redirections:
         entryPoint:
@@ -52,7 +52,7 @@ ports:
   websecure:
     nodePort: 30443
     proxyProtocol:
-      trustedIPs: [192.168.56.10/32]
+      trustedIPs: [192.168.56.13/32, 192.168.56.14/32]
 resources:
   requests: {cpu: 50m, memory: 64Mi}
   limits: {cpu: 300m, memory: 128Mi}

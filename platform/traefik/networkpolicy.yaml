@@ -10,7 +10,8 @@ spec:
   policyTypes: [Ingress]
   ingress:
     - from:
-        - ipBlock: {cidr: 192.168.56.10/32}
+        - ipBlock: {cidr: 192.168.56.13/32}
+        - ipBlock: {cidr: 192.168.56.14/32}
       ports:
         - {protocol: TCP, port: 8000}
         - {protocol: TCP, port: 8443}

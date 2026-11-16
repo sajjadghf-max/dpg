@@ -73,11 +73,14 @@ room for monitoring, Argo, system workloads, and a failed node before expanding.
 
 Extra pods on existing VMs do not change the VM allocation, but consume its
 headroom. A third worker of the current size would add 3 GiB and two vCPUs,
-raising configured guest RAM from 9.5 to 12.5 GiB; this 16 GiB host would need
+raising configured guest RAM from 10 to 13 GiB; this 16 GiB host would need
 more room or a different host. Keep production cost estimates tied to actual
 provider/region prices rather than inventing a currency figure for local VMs.
 
 The small ephemeral monitoring setup saves resources at the cost of history and
 recovery. Production durability and separate failure domains cost more but are
-needed for meaningful HA. A single LB/control plane/etcd and one physical host
+needed for meaningful HA. A single control plane/etcd and one physical host
 remain the larger reliability limits; low app CPU does not remove them.
+
+The second 512 MiB LB raises the current VM allocation to 10 GiB. The earlier
+traffic measurements used the original LB topology; they are historical evidence.

@@ -13,7 +13,7 @@ defaults
     timeout server 1h
 
 frontend kubernetes_api
-    bind {{ ansible_host }}:6443
+    bind {{ load_balancer_vip }}:6443
     default_backend control_plane
 
 backend control_plane
@@ -23,11 +23,11 @@ backend control_plane
 {% endfor %}
 
 frontend application_http
-    bind {{ ansible_host }}:80
+    bind {{ load_balancer_vip }}:80
     default_backend ingress_http
 
 frontend application_https
-    bind {{ ansible_host }}:443
+    bind {{ load_balancer_vip }}:443
     default_backend ingress_https
 
 backend ingress_http

@@ -29,14 +29,15 @@ in the `dpg-app/app-tls` Secret.
 
 ## Client IP and access
 
-HAProxy sends PROXY protocol v2. Traefik trusts it only from `192.168.56.10`;
+HAProxy sends PROXY protocol v2. Traefik trusts it only from the LB node
+addresses `192.168.56.13` and `192.168.56.14`.
 `externalTrafficPolicy: Local` preserves that peer address. Incoming client
 forwarding headers are not trusted. Traefik sets the forwarded address from
 the verified connection, and NGINX passes it to PHP as `REMOTE_ADDR`.
 
 NGINX trusts the lab pod CIDR for forwarding headers, paired with NetworkPolicy:
 only Traefik and the administrative Helm test client can reach its HTTP port.
-The ingress controller accepts public-entrypoint traffic only from the LB VM.
+The ingress controller accepts public-entrypoint traffic only from the two LB VMs.
 The dashboard is disabled; no extra Gateway API or Traefik CRDs are installed.
 
 ## Verified

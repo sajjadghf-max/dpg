@@ -1,0 +1,44 @@
+- name: Gather controller memory and device facts
+  ansible.builtin.setup:
+    gather_subset: [hardware]
+
+- name: Check required host commands
+  ansible.builtin.command:
+    argv: ['{{ item }}', --version]
+  loop: [git, curl, python3, vagrant, virsh, qemu-system-x86_64, timeout]
+  changed_when: false
+
+- name: Check KVM permissions for this user
+  ansible.builtin.command:
+    argv: ['{{ ansible_playbook_python }}', -c, "import os; assert os.access('/dev/kvm', os.R_OK | os.W_OK), 'KVM access required'"]
+  changed_when: false
+
+- name: Read Vagrant version
+  ansible.builtin.command: vagrant --version
+  register: preflight_vagrant
+  changed_when: false
+  failed_when: preflight_vagrant.stdout != 'Vagrant 2.4.9'
+
+- name: Read installed Vagrant plugins
+  ansible.builtin.command: vagrant plugin list
+  register: preflight_plugins
+  changed_when: false
+  failed_when: "'vagrant-libvirt (0.12.2,' not in preflight_plugins.stdout"
+
+- name: Verify system libvirt access with a bounded timeout
+  ansible.builtin.command: timeout 5 virsh --readonly --connect qemu:///system list
+  changed_when: false
+
+- name: Report current memory and the cold-start budget
+  ansible.builtin.debug:
+    msg: 'Available RAM: {{ ansible_facts.memtotal_mb - ansible_facts.memory_mb.real.used }} MiB. VMs reserve 10240 MiB; aim for 11776 MiB available before a cold start. Running VMs already consume this allocation.'
+
+- name: Report checkout disk space
+  ansible.builtin.command:
+    argv: [df, -h, '{{ project_dir }}']
+  register: preflight_disk
+  changed_when: false
+
+- name: Display disk space
+  ansible.builtin.debug:
+    var: preflight_disk.stdout_lines

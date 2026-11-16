@@ -1,0 +1,31 @@
+global_defs {
+    router_id DPG_{{ inventory_hostname | upper }}
+}
+
+# A missing HAProxy process makes this instance ineligible to own the VIP.
+vrrp_track_process haproxy_process {
+    process haproxy
+    quorum 1
+    delay 1
+}
+
+vrrp_instance DPG_LB {
+    state BACKUP
+    interface {{ load_balancer_interface }}
+    virtual_router_id 56
+    priority {{ keepalived_priority }}
+    advert_int 1
+    unicast_src_ip {{ ansible_host }}
+    check_unicast_src
+    unicast_peer {
+{% for peer in groups['load_balancer'] if peer != inventory_hostname %}
+        {{ hostvars[peer].ansible_host }}
+{% endfor %}
+    }
+    virtual_ipaddress {
+        {{ load_balancer_vip }}/24 dev {{ load_balancer_interface }}
+    }
+    track_process {
+        haproxy_process
+    }
+}

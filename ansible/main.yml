@@ -1,4 +1,4 @@
-# Select a phase with -e lab_phase=host|cluster|hardening|images|platform|verify|all.
+# Use lab_phase to select installation, validation or an explicit exercise (see docs/automation.md).
 - name: Prepare the Ubuntu libvirt host
   hosts: localhost
   connection: local
@@ -6,7 +6,7 @@
   pre_tasks:
     - name: Validate the selected phase
       ansible.builtin.assert:
-        that: lab_phase in ['host', 'cluster', 'hardening', 'images', 'platform', 'verify', 'all']
+        that: lab_phase in ['host', 'failover', 'validate', 'preflight', 'imagecheck', 'cluster', 'loadbalancer', 'hardening', 'images', 'platform', 'verify', 'all']
       tags: [always]
   roles:
     - role: host_setup
@@ -17,14 +17,14 @@
   gather_facts: false
   roles:
     - role: trusted_ca
-      when: lab_phase in ['cluster', 'all']
+      when: lab_phase in ['cluster', 'loadbalancer', 'all']
 - name: Configure the API and application load balancer
   hosts: load_balancer
   become: true
   gather_facts: false
   roles:
     - role: load_balancer
-      when: lab_phase in ['cluster', 'all']
+      when: lab_phase in ['cluster', 'loadbalancer', 'all']
 - name: Provision Kubernetes with pinned Kubespray
   ansible.builtin.import_playbook: ../vendor/kubespray/cluster.yml
   become: true
@@ -36,7 +36,7 @@
   gather_facts: false
   roles:
     - role: host_hardening
-      when: lab_phase in ['cluster', 'hardening', 'all']
+      when: lab_phase in ['cluster', 'loadbalancer', 'hardening', 'all']
 - name: Build and export content-addressed application images
   hosts: localhost
   connection: local
@@ -102,3 +102,36 @@
   roles:
     - role: verification
       when: lab_phase == 'verify'
+
+- name: Validate repository manifests without accessing the cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: manifest_validation
+      when: lab_phase == 'validate'
+
+- name: Check controller prerequisites
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: host_preflight
+      when: lab_phase == 'preflight'
+
+- name: Test container images in an isolated Docker network
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: image_verification
+      when: lab_phase == 'imagecheck'
+
+# Explicit phase: briefly disrupts one LB; never part of routine verification.
+- name: Exercise load-balancer failover with automatic recovery
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: load_balancer_verification
+      when: lab_phase == 'failover'

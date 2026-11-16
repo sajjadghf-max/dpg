@@ -5,8 +5,8 @@ flowchart TB
   User["Client: app.dpg.test / grafana.dpg.test"]
   Admin["Operator: kubectl / Ansible"]
   Git["GitHub: reviewed chart on main"]
-  subgraph Host["One physical host — four VMs, 9.5 GiB total"]
-    LB["lb · 512 MiB<br/>HAProxy TCP :80 / :443 / :6443"]
+  subgraph Host["One physical host — five VMs, 10 GiB total"]
+    LB["lb + lb2 · 512 MiB each<br/>HAProxy + Keepalived · VIP .10"]
     CP["cp1 · 3 GiB<br/>Kubernetes API + single etcd member"]
     subgraph Workers["worker1 + worker2 · 3 GiB each · Calico VXLAN"]
       Ingress["Traefik ×2<br/>TLS termination · NodePorts 30080 / 30443"]
@@ -41,9 +41,10 @@ Monitoring observes ingress requests, connections, PHP workers, and Kubernetes
 resources. Grafana has TLS and a generated admin login. Prometheus, Alertmanager,
 and the notification mock have no public ingress. Their local data is ephemeral.
 Argo CD reconciles the application chart from Git; infrastructure and platform
-installation stay with the existing scripts. See [GitOps ownership](gitops.md).
+installation use Ansible roles. See [GitOps ownership](gitops.md).
 
-This is application redundancy on one host, not infrastructure HA. There is one
-LB, one control plane, one etcd member, and one physical failure domain. Keepalived
-was omitted by agreement. The application can continue during some API outages,
-but scheduling, reconciliation, and autoscaling cannot be relied on then.
+Keepalived provides failover between two dedicated load-balancer VMs using one
+floating address. Both HAProxy instances have the same backends and trust rules.
+The control plane and etcd still each have one instance, and all five VMs share
+one physical failure domain. A host or control-plane failure is not covered by
+LB failover. Existing connections may need retry during VIP movement.

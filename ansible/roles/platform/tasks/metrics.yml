@@ -4,7 +4,7 @@
 
 - name: Validate and approve only inventory-matching serving CSRs
   ansible.builtin.command:
-    argv: "{{ [ansible_playbook_python, project_dir ~ '/scripts/approve-kubelet-csrs.py'] + csr_wait_nodes }}"
+    argv: "{{ [ansible_playbook_python, role_path ~ '/files/approve-kubelet-csrs.py'] + csr_wait_nodes }}"
   register: csr_approval
   changed_when: "'approved' in csr_approval.stdout"
 

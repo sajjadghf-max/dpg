@@ -1,0 +1,12 @@
+- name: Verify both load-balancer services are healthy before disruption
+  ansible.builtin.command: systemctl is-active haproxy keepalived
+  delegate_to: '{{ item }}'
+  become: true
+  loop: "{{ groups['load_balancer'] }}"
+  changed_when: false
+
+- name: Exercise VIP failover and HAProxy process tracking separately
+  ansible.builtin.include_tasks: failover.yml
+  loop: [keepalived, haproxy]
+  loop_control:
+    loop_var: failed_service

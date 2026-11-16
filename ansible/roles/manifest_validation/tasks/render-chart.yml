@@ -1,0 +1,19 @@
+- name: Lint {{ validation_chart.name }}
+  ansible.builtin.command:
+    argv: "{{ [state_dir ~ '/bin/helm', 'lint', validation_chart.chart] + validation_chart.args }}"
+    chdir: '{{ project_dir }}'
+  changed_when: false
+
+- name: Render {{ validation_chart.name }}
+  ansible.builtin.command:
+    argv: "{{ [state_dir ~ '/bin/helm', 'template', validation_chart.release, validation_chart.chart, '-n', validation_chart.namespace, '--kube-version', '1.36.4'] + validation_chart.args }}"
+    chdir: '{{ project_dir }}'
+  register: chart_render
+  changed_when: false
+
+- name: Save {{ validation_chart.name }} for schema validation
+  ansible.builtin.copy:
+    content: '{{ chart_render.stdout }}
+'
+    dest: '{{ state_dir }}/validation/{{ validation_chart.name }}.yaml'
+    mode: '0600'

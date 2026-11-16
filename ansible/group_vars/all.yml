@@ -19,3 +19,7 @@ charts:
     file: kube-prometheus-stack-93.3.0.tgz
     url: https://github.com/prometheus-community/helm-charts/releases/download/kube-prometheus-stack-93.3.0/kube-prometheus-stack-93.3.0.tgz
     checksum: sha256:2d40be0b19523cb4fed25b4db09e3ca35f471a06872baf7048b916a62c7af0eb
+
+# The floating address remains stable when either load balancer fails.
+load_balancer_vip: 192.168.56.10
+load_balancer_interface: eth1

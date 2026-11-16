@@ -39,6 +39,23 @@ ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=verify
 `lab_phase=all` runs cluster, images and platform in order; host setup and
 verification remain separate. With no phase specified, main runs verification.
 `lab_phase=hardening` reapplies VM hardening alone.
+`lab_phase=loadbalancer` configures CA trust, both HAProxy/Keepalived instances
+and host firewall rules without rerunning Kubernetes installation.
+`lab_phase=failover` briefly stops Keepalived, then HAProxy, on the preferred LB,
+checks standby API/HTTPS access and restores each service in an `always` block.
+Run it only when a short LB interruption is acceptable.
+
+`lab_phase=preflight` checks host tools and access without changing configuration.
+`lab_phase=imagecheck` runs isolated Docker endpoint/security/recovery checks and
+removes the containers/network. Build the images first; do not run concurrently.
+
+For CI validation, use its pinned Python environment; no cluster access is needed:
+
+```sh
+bash scripts/setup-validation.sh
+source .state/validation-venv/bin/activate
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=validate
+```
 
 Within platform or verification, `--tags` selects `metrics` (platform only),
 `app`, `ingress`, `monitoring`, `observability` or `gitops`.
@@ -70,12 +87,26 @@ CSR approval validates node identity and waits for bootstrap certificates when
 absent on disk. Verification creates temporary resources and cleans them in
 `always` blocks. Run one verification at a time.
 
-The remaining scripts handle controller bootstrap, CI validation, Docker tests,
-CSR identity validation and timed capacity/incident exercises.
+The remaining scripts handle only the Python/Ansible bootstrap, custom CRD
+schema validation and timed capacity/incident exercises. The CSR identity helper
+belongs to the platform role. See [scripts](../scripts/README.md).
 
 On 2026-11-16, the consolidated main entry point passed the platform and images
 phases with zero changes. Its default verification phase passed, including
 firing/resolved notifications and cleanup. Local CI validation and main syntax
 checks passed; an invalid phase was rejected before changes. Host setup and a
-clean cluster rebuild remain untested. The single load balancer/control-plane
-limitations remain.
+clean cluster rebuild remain untested. The single control-plane and physical-host limitations remain.
+
+The script migration added native preflight, isolated container checks and CI
+manifest validation roles. On 2026-11-16, all three passed; CI validation and
+load-balancer configuration repeated with zero changes. The moved CSR helper
+passed the metrics phase without changes and rejected an unknown node. A
+malformed ServiceMonitor was rejected by schema validation. A bounded 2/6 RPS,
+five-second smoke test returned 40 successful responses with valid TLS/client IP;
+it does not replace the earlier full capacity results.
+
+Full verification also passed after the LB change: host hardening, cross-worker
+networking, app policies, TLS/client IP, monitoring, Argo reconciliation, SLO
+queries and firing/resolved mock notifications. Temporary notification rules and
+Docker test resources were removed. A clean rebuild and reboot persistence
+remain untested; the updated hosted CI workflow has not been pushed or run.

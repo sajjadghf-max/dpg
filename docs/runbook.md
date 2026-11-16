@@ -41,7 +41,7 @@ Useful bounded diagnostics:
 "$K" get csr
 ```
 
-For certificate renewal, `scripts/approve-kubelet-csrs.py` validates the three
+For certificate renewal, `ansible/roles/platform/files/approve-kubelet-csrs.py` validates the three
 inventory identities; the platform phase's `metrics` tag invokes it. Never approve every CSR
 blindly. In Grafana, use **Digipay application**. To inspect Prometheus locally:
 

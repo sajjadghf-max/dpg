@@ -1,0 +1,31 @@
+validation_tools:
+  - name: helm
+    url: https://get.helm.sh/helm-v3.21.3-linux-amd64.tar.gz
+    checksum: sha256:15e041a93a590dce8100f39385cd98c84a765c9e36aeeb9e2dc6ff9e4769e2e0
+  - name: kubeconform
+    url: https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
+    checksum: sha256:9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
+validation_files:
+  - .state/validation/app-default.yaml
+  - .state/validation/app-gitops.yaml
+  - .state/validation/observability.yaml
+  - .state/argocd/install.yaml
+  - gitops/project.yaml
+  - gitops/application.yaml
+  - platform/traefik/networkpolicy.yaml
+validation_charts:
+  - name: app-default
+    release: app
+    chart: charts/dpg-app
+    namespace: dpg-app
+    args: []
+  - name: app-gitops
+    release: app
+    chart: charts/dpg-app
+    namespace: dpg-app
+    args: ['-f', .state/validation/app-values.json]
+  - name: observability
+    release: dpg-observability
+    chart: charts/dpg-observability
+    namespace: monitoring
+    args: [--set, receiver.image=dpg-php:validation]

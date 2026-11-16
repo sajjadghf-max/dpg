@@ -1,0 +1,84 @@
+- name: Create validation directories
+  ansible.builtin.file:
+    path: '{{ state_dir }}/{{ item }}'
+    state: directory
+    mode: '0700'
+  loop: [bin, downloads, charts, argocd, validation, validation/schema-cache]
+
+- name: Prepare pinned validation tools
+  ansible.builtin.import_tasks: tools.yml
+
+- name: Render Argo CD using the installation tasks without applying resources
+  ansible.builtin.include_role:
+    name: platform
+    tasks_from: render-argocd
+  vars:
+    kubectl: '{{ state_dir }}/bin/kubectl'
+
+- name: Save rendered Argo CD resources
+  ansible.builtin.copy:
+    content: '{{ argo_render.stdout }}
+'
+    dest: '{{ state_dir }}/argocd/install.yaml'
+    mode: '0600'
+
+- name: Download the pinned monitoring chart containing CRD schemas
+  ansible.builtin.get_url:
+    url: '{{ charts.monitoring.url }}'
+    dest: '{{ state_dir }}/charts/{{ charts.monitoring.file }}'
+    checksum: '{{ charts.monitoring.checksum }}'
+    mode: '0600'
+
+- name: Read GitOps application values and validate dashboard JSON
+  ansible.builtin.set_fact:
+    validation_app: "{{ lookup('file', project_dir ~ '/gitops/application.yaml') | from_yaml }}"
+    validation_dashboard: "{{ lookup('file', project_dir ~ '/charts/dpg-observability/files/dashboard.json') | from_json }}"
+
+- name: Stage application values for Helm
+  ansible.builtin.copy:
+    content: '{{ validation_app.spec.source.helm.valuesObject | to_nice_json }}'
+    dest: '{{ state_dir }}/validation/app-values.json'
+    mode: '0600'
+
+- name: Lint and render application and observability charts
+  ansible.builtin.include_tasks: render-chart.yml
+  loop: '{{ validation_charts }}'
+  loop_control:
+    loop_var: validation_chart
+    label: '{{ validation_chart.name }}'
+
+- name: Validate standard Kubernetes resources against pinned version schemas
+  ansible.builtin.command:
+    argv: "{{ [state_dir ~ '/bin/kubeconform', '-strict', '-summary', '-kubernetes-version', '1.36.4', '-cache', state_dir ~ '/validation/schema-cache', '-skip', 'Application,AppProject,PrometheusRule,ServiceMonitor,CustomResourceDefinition'] + validation_files }}"
+    chdir: '{{ project_dir }}'
+  changed_when: false
+  register: standard_validation
+
+- name: Validate custom resources against their bundled upstream schemas
+  ansible.builtin.command:
+    argv: "{{ [ansible_playbook_python, project_dir ~ '/scripts/validate-custom-resources.py'] + validation_files }}"
+    chdir: '{{ project_dir }}'
+  changed_when: false
+  register: custom_validation
+
+- name: Check shell syntax
+  ansible.builtin.command:
+    argv: [bash, -n, '{{ item }}']
+  loop: "{{ query('fileglob', project_dir ~ '/scripts/*.sh') }}"
+  changed_when: false
+
+- name: Check Python syntax without executing exercises
+  ansible.builtin.command:
+    argv: ['{{ ansible_playbook_python }}', -c, 'import ast, pathlib, sys; ast.parse(pathlib.Path(sys.argv[1]).read_text(), filename=sys.argv[1])', '{{ item }}']
+  loop: "{{ query('fileglob', project_dir ~ '/scripts/*.py') + query('fileglob', project_dir ~ '/ansible/roles/platform/files/*.py') }}"
+  changed_when: false
+
+- name: Check the complete Ansible project syntax
+  ansible.builtin.command:
+    argv: ['{{ ansible_playbook_python }}', -m, ansible.cli.playbook, -i, inventory/lab/hosts.yml, ansible/main.yml, --syntax-check]
+    chdir: '{{ project_dir }}'
+  changed_when: false
+
+- name: Report resource validation results
+  ansible.builtin.debug:
+    msg: ['{{ standard_validation.stdout }}', '{{ custom_validation.stdout }}']

@@ -9,7 +9,7 @@ Build/import with Ansible and check the images locally with Docker:
 
 ```sh
 ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=images
-bash scripts/check-images.sh
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=imagecheck
 ```
 
 The images are `dpg-php:lab` and `dpg-nginx:lab`. Base images are PHP

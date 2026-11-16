@@ -13,19 +13,21 @@ table inet dpg_host {
         iifname "eth0" udp sport 67 udp dport 68 accept
         ip saddr { 192.168.56.1, 192.168.121.1 } tcp dport 22 accept
 {% if inventory_hostname in groups['load_balancer'] %}
+        # VRRP is IP protocol 112, accepted only from the other load balancer.
+        ip saddr { {{ groups['load_balancer'] | map('extract', hostvars, 'ansible_host') | join(', ') }} } ip protocol vrrp accept
         ip saddr 192.168.56.0/24 tcp dport { 80, 443, 6443 } accept
         ip saddr 10.233.64.0/18 tcp dport 6443 accept
 {% else %}
         # IPVS Service VIPs traverse INPUT before forwarding to a pod.
         ip saddr { 192.168.56.11, 192.168.56.21, 192.168.56.22, 10.233.64.0/18 } ip daddr 10.233.0.0/18 accept
-        ip saddr 192.168.56.10 tcp dport { 30080, 30443 } accept
+        ip saddr { {{ groups['load_balancer'] | map('extract', hostvars, 'ansible_host') | join(', ') }} } tcp dport { 30080, 30443 } accept
         # Node overlay and authenticated node/monitoring endpoints.
         ip saddr { 192.168.56.11, 192.168.56.21, 192.168.56.22 } udp dport 4789 accept
         ip saddr { 192.168.56.11, 192.168.56.21, 192.168.56.22, 10.233.64.0/18 } tcp dport { 6443, 10250, 9100, 9253, 9254, 9353 } accept
         ip saddr 10.233.64.0/18 ip daddr 169.254.25.10 udp dport 53 accept
         ip saddr 10.233.64.0/18 ip daddr 169.254.25.10 tcp dport 53 accept
 {% if inventory_hostname in groups['kube_control_plane'] %}
-        ip saddr 192.168.56.10 tcp dport 6443 accept
+        ip saddr { {{ groups['load_balancer'] | map('extract', hostvars, 'ansible_host') | join(', ') }} } tcp dport 6443 accept
 {% endif %}
 {% endif %}
     }

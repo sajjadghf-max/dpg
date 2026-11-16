@@ -1,0 +1,78 @@
+- name: Check the preferred LB owns the VIP before stopping {{ failed_service }}
+  ansible.builtin.command: ip -4 address show dev {{ load_balancer_interface }}
+  delegate_to: lb
+  become: true
+  register: primary_address
+  until: load_balancer_vip in primary_address.stdout
+  retries: 20
+  delay: 1
+  changed_when: false
+
+- name: Verify bounded failover with automatic service restoration
+  block:
+    - name: Stop {{ failed_service }} on the preferred LB
+      ansible.builtin.systemd_service:
+        name: '{{ failed_service }}'
+        state: stopped
+      delegate_to: lb
+      become: true
+
+    - name: Wait for the standby to acquire the VIP
+      ansible.builtin.command: ip -4 address show dev {{ load_balancer_interface }}
+      delegate_to: lb2
+      become: true
+      register: standby_address
+      until: load_balancer_vip in standby_address.stdout
+      retries: 20
+      delay: 1
+      changed_when: false
+
+    - name: Confirm the old owner released the VIP
+      ansible.builtin.command: ip -4 address show dev {{ load_balancer_interface }}
+      delegate_to: lb
+      become: true
+      register: released_address
+      changed_when: false
+      failed_when: load_balancer_vip in released_address.stdout
+
+    - name: Verify authenticated Kubernetes API access through the standby
+      ansible.builtin.command:
+        argv: ['{{ kubectl }}', '--kubeconfig={{ kubeconfig }}', get, --raw=/readyz, --request-timeout=10s]
+      register: failover_api
+      changed_when: false
+      failed_when: failover_api.rc != 0 or failover_api.stdout != 'ok'
+
+    - name: Verify application TLS and real client IP through the standby
+      ansible.builtin.command:
+        argv: [curl, --fail, --silent, --show-error, --noproxy, '*', --interface, 192.168.56.1, --connect-timeout, '3', --max-time, '10', --cacert, '{{ state_dir }}/tls/ca.crt', --resolve, 'app.dpg.test:443:{{ load_balancer_vip }}', 'https://app.dpg.test/']
+      register: failover_app
+      changed_when: false
+      failed_when: failover_app.rc != 0 or (failover_app.stdout | from_json).client_ip != '192.168.56.1'
+
+  always:
+    - name: Restore {{ failed_service }} on the preferred LB
+      ansible.builtin.systemd_service:
+        name: '{{ failed_service }}'
+        state: started
+      delegate_to: lb
+      become: true
+
+- name: Wait for preferred-owner recovery
+  ansible.builtin.command: ip -4 address show dev {{ load_balancer_interface }}
+  delegate_to: lb
+  become: true
+  register: recovered_address
+  until: load_balancer_vip in recovered_address.stdout
+  retries: 20
+  delay: 1
+  changed_when: false
+
+- name: Verify the standby released the VIP after recovery
+  ansible.builtin.command: ip -4 address show dev {{ load_balancer_interface }}
+  delegate_to: lb2
+  become: true
+  register: standby_released
+  until: load_balancer_vip not in standby_released.stdout
+  retries: 20
+  delay: 1
+  changed_when: false

@@ -1,21 +1,5 @@
-- name: Download checksum-verified Argo CD core manifests
-  ansible.builtin.get_url:
-    url: https://raw.githubusercontent.com/argoproj/argo-cd/v3.6.1/manifests/core-install.yaml
-    dest: "{{ state_dir }}/argocd/core-install-v3.6.1.yaml"
-    checksum: sha256:0b38189d6e1fd76ef5c3db10355026c48a02020d82bf21a1a1b5ab16dffe4f3c
-    mode: "0600"
-
-- name: Stage the resource overlay
-  ansible.builtin.copy:
-    src: "{{ project_dir }}/platform/argocd/kustomization.yaml"
-    dest: "{{ state_dir }}/argocd/kustomization.yaml"
-    mode: "0600"
-
-- name: Render Argo CD manifests
-  ansible.builtin.command:
-    argv: ["{{ kubectl }}", kustomize, "{{ state_dir }}/argocd"]
-  register: argo_render
-  changed_when: false
+- name: Prepare Argo CD manifests
+  ansible.builtin.import_tasks: render-argocd.yml
 
 - name: Ensure the Argo CD namespace exists
   kubernetes.core.k8s:

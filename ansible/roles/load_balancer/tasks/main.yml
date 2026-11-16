@@ -1,13 +1,21 @@
 - name: Inspect installed packages
   ansible.builtin.package_facts:
     manager: auto
-- name: Install HAProxy
+- name: Install HAProxy and Keepalived
   ansible.builtin.apt:
-    name: haproxy
+    name: [haproxy, keepalived]
     state: present
-    update_cache: '{{ ''haproxy'' not in ansible_facts.packages }}'
+    update_cache: "{{ 'keepalived' not in ansible_facts.packages or 'haproxy' not in ansible_facts.packages }}"
     cache_valid_time: 3600
     lock_timeout: 120
+- name: Allow HAProxy to bind the floating IP on the standby
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    value: '1'
+    state: present
+    sysctl_set: true
+    sysctl_file: /etc/sysctl.d/90-dpg-load-balancer.conf
+
 - name: Configure TCP forwarding
   ansible.builtin.template:
     src: haproxy.cfg.j2
@@ -20,5 +28,24 @@
 - name: Enable HAProxy
   ansible.builtin.service:
     name: haproxy
+    enabled: true
+    state: started
+
+- name: Apply validated HAProxy configuration before enabling VRRP
+  ansible.builtin.meta: flush_handlers
+
+- name: Configure unicast VRRP and HAProxy process tracking
+  ansible.builtin.template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+    group: root
+    mode: '0600'
+    validate: /usr/sbin/keepalived --config-test --use-file=%s
+  notify: Restart Keepalived
+
+- name: Enable Keepalived
+  ansible.builtin.systemd_service:
+    name: keepalived
     enabled: true
     state: started

@@ -22,4 +22,6 @@ jobs:
       - name: Install pinned validation tools
         run: bash scripts/setup-validation.sh
       - name: Lint charts and validate rendered resources
-        run: bash scripts/validate.sh
+        run: |
+          source .state/validation-venv/bin/activate
+          ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=validate

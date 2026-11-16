@@ -1,10 +1,11 @@
 # Digipay SRE lab
 
-Vagrant creates four local VMs. Kubespray installs Kubernetes and its prerequisites.
+Vagrant creates five local VMs. Kubespray installs Kubernetes and its prerequisites.
 
 | VM | IP | RAM | vCPUs | Intended role |
 | --- | --- | --- | --- | --- |
-| lb | 192.168.56.10 | 512 MiB | 1 | HAProxy for the API and ingress |
+| lb | 192.168.56.13 | 512 MiB | 1 | Preferred HAProxy/Keepalived |
+| lb2 | 192.168.56.14 | 512 MiB | 1 | Standby HAProxy/Keepalived |
 | cp1 | 192.168.56.11 | 3 GiB | 2 | Control plane and etcd |
 | worker1 | 192.168.56.21 | 3 GiB | 2 | Application and platform workloads |
 | worker2 | 192.168.56.22 | 3 GiB | 2 | Application and platform workloads |
@@ -15,7 +16,7 @@ See the [upstream explanation](https://github.com/kubernetes-sigs/kubespray/blob
 
 ```mermaid
 flowchart LR
-  Client -->|HTTPS| LB[HAProxy]
+  Client -->|HTTPS| LB[HAProxy + Keepalived x2 · floating IP]
   LB -->|PROXY v2| Ingress[Traefik x2]
   Ingress --> NGINX[NGINX x2–3]
   NGINX -->|FastCGI| PHP[PHP-FPM x2–3]
@@ -29,11 +30,11 @@ flowchart LR
 
 ## Limits
 
-This is a small lab on one physical host. The load balancer, control plane, and
-etcd each have a single instance. Keepalived is deliberately omitted because
-there is no second load balancer. This departs from the brief's Keepalived
-requirement. We can test application recovery, but cannot claim control-plane
-or load-balancer HA.
+Keepalived moves the floating address `192.168.56.10` between two dedicated
+load-balancer VMs. This covers failure of one LB or its HAProxy process; it does
+not make the single control plane, etcd member or physical host highly available.
+Existing TCP connections can break during failover. See [load-balancer setup and
+checks](docs/load-balancing.md).
 
 ## Automation
 
@@ -68,17 +69,17 @@ libvirt and kvm groups. Sudo prompts for your password in the terminal.
 Log out and back in, then check the host:
 
 ```sh
-bash scripts/preflight.sh
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=preflight
 ```
 
-The preflight script is read-only and exits with status 1 for missing
+The preflight phase is read-only and exits with status 1 for missing
 prerequisites. Setup follows the [Vagrant installation guidance](https://developer.hashicorp.com/vagrant/install)
 and [libvirt plugin requirements](https://vagrant-libvirt.github.io/vagrant-libvirt/installation.html).
 
 ## Create the VMs
 
-The four VMs reserve 9.5 GiB RAM in total. Free at least 11 GiB of available host
-memory before starting all four, allowing some room for virtualization overhead.
+The five VMs reserve 10 GiB RAM in total. Free at least 11.5 GiB of available host
+memory before starting all five, allowing some room for virtualization overhead.
 The bounded 10 → 30 RPS comparison is recorded in [capacity](docs/capacity.md);
 it is not a maximum-throughput claim.
 
@@ -98,7 +99,7 @@ Use `vagrant halt` to stop the VMs and release their memory.
 
 ## Provision Kubernetes
 
-Once all four VMs are running:
+Once all five VMs are running:
 
 ```sh
 bash scripts/prepare-kubespray.sh
@@ -144,7 +145,7 @@ its old host key with `ssh-keygen -f .state/known_hosts -R <VM-IP>` before provi
 
 ```sh
 ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=images
-bash scripts/check-images.sh
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=imagecheck
 ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=platform --tags metrics
 ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=platform --tags app
 ```
@@ -172,10 +173,10 @@ and scrape coverage. This phase uses ephemeral storage to fit the local lab.
 
 ## Current state
 
-Host setup is complete. All four VMs booted and passed Ansible SSH/sudo checks.
+Host setup is complete. All five VMs booted and passed Ansible SSH/sudo checks.
 The three Kubernetes nodes can reach the load balancer over the lab network.
 HAProxy is active, its configuration passes validation, and it listens on
-`192.168.56.10:6443`. Re-running its playbook reported zero changes.
+`192.168.56.10:6443`. The floating IP is shared by the two Keepalived instances.
 
 Kubernetes 1.36.4 is running with all three nodes Ready, using containerd 2.3.5.
 The API readiness check passes through HAProxy. Calico and CoreDNS are healthy.
@@ -210,7 +211,8 @@ or during deployment.
 ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=platform --tags gitops
 ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=verify --tags gitops
 bash scripts/setup-validation.sh
-bash scripts/validate.sh
+source .state/validation-venv/bin/activate
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=validate
 ```
 
 Argo CD Core manages the application from `main`; use Git for chart changes.

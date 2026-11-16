@@ -87,7 +87,8 @@ after recovery. This is not needed for the provided bounded failure exercises.
 
 ```sh
 bash scripts/setup-validation.sh
-bash scripts/validate.sh
+source .state/validation-venv/bin/activate
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=validate
 ```
 
 GitHub Actions runs the same checks for pull requests and pushes to `main`, with

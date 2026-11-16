@@ -4,18 +4,18 @@ Checked items are complete. Runtime results will be recorded only after testing.
 
 ## Infrastructure
 
-- [x] Choose the host and topology: local machine, one LB, one control plane, two workers.
+- [x] Choose the host and topology: local machine, two LBs, one control plane, two workers.
 - [x] Choose Vagrant/libvirt, Ubuntu 24.04, Kubespray, and Calico.
 - [x] Add read-only host checks.
-- [x] Allocate 9.5 GiB RAM (control plane increased to 3 GiB during GitOps setup); choose 192.168.56.0/24 for the lab and 192.168.121.0/24 for management (no current route overlap).
-- [x] Add host setup and four VM definitions; pin Vagrant, its libvirt plugin, and the Ubuntu box.
-- [x] Run host setup and verify all four VMs boot and accept SSH.
+- [x] Allocate 10 GiB RAM (control plane increased to 3 GiB during GitOps setup); choose 192.168.56.0/24 for the lab and 192.168.121.0/24 for management (no current route overlap).
+- [x] Add host setup and five VM definitions; pin Vagrant, its libvirt plugin, and the Ubuntu box.
+- [x] Run host setup and verify all five VMs boot and accept SSH.
 - [x] Pin Kubespray, Kubernetes, containerd, etcd, and Calico versions.
 - [x] Add Kubespray inventory, API HAProxy playbook, and provisioning commands.
 - [x] Automate VM creation and Kubernetes provisioning, including swap, kernel, sysctl, and cgroups.
 - [x] Configure HAProxy for API and application traffic.
 - [x] Configure and verify VM firewall rules, SSH restrictions, and unused-service hardening through Ansible.
-- [x] Omit Keepalived as agreed; document the departure and single-LB limitation.
+- [x] Configure two Keepalived/HAProxy servers and document the remaining single-control-plane/physical-host limits.
 - [x] Verify API readiness, DNS, Service routing, and cross-node networking.
 - [ ] Verify a clean rebuild and complete repeated provisioning.
 
