@@ -1,3 +1,6 @@
+- name: Gather host facts
+  ansible.builtin.setup:
+
 - name: Require the supported host and a normal invoking user
   ansible.builtin.assert:
     that:

@@ -7,8 +7,8 @@ set the image tags in `gitops/application.yaml` from `.state/app-images.json`
 before installing Argo; do not assume another build has the same image IDs.
 
 ```sh
-ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags gitops
-ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags gitops
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=platform --tags gitops
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=verify --tags gitops
 ```
 
 Argo CD Core 3.6.1 runs the application controller, repo server, and Redis, each
@@ -28,7 +28,7 @@ at install time. The certificate is copied into Argo's GitHub trust ConfigMap,
 not committed or used to disable certificate verification:
 
 ```sh
-GIT_CA_FILE=/path/to/trusted-root.pem ansible-playbook -i inventory/lab/hosts.yml ansible/platform.yml --tags gitops
+GIT_CA_FILE=/path/to/trusted-root.pem ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=platform --tags gitops
 ```
 
 `gitops/project.yaml` permits only this repository and namespaced application
@@ -46,7 +46,7 @@ can assess Ingress health without bypassing its normal health check.
 Argo uses Helm to render templates, not to operate a Helm release. The old `app`
 release history remains as a bootstrap record and becomes stale after Argo
 changes the workloads. Do not run `helm upgrade`, `rollback`, or `uninstall app`.
-The platform playbook skips the application Helm release once Argo owns it and
+The platform phase skips the application Helm release once Argo owns it and
 preserves its live application settings. Network checks render the current chart's
 test pods instead of relying on stale Helm hook history.
 
@@ -66,7 +66,7 @@ Images still use the agreed local import workflow; CI does not publish images.
 Build and import on both workers before changing an image reference:
 
 ```sh
-ansible-playbook -i inventory/lab/hosts.yml ansible/images.yml
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=images
 cat .state/app-images.json
 ```
 

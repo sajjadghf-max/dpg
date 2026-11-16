@@ -3,13 +3,13 @@
 Apply and verify from the checkout:
 
 ```sh
-ansible-playbook -i inventory/lab/hosts.yml ansible/hardening.yml
-ansible-playbook -i inventory/lab/hosts.yml ansible/check-hardening.yml
-ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags cluster
-ansible-playbook -i inventory/lab/hosts.yml ansible/verify.yml --tags monitoring
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=hardening
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=verify --tags hardening
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=verify --tags cluster
+ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml -e lab_phase=verify --tags monitoring
 ```
 
-The provisioning script runs hardening after Kubespray. The playbook processes one
+The cluster phase runs hardening after Kubespray. The hardening role processes one
 VM at a time and verifies a fresh SSH connection after applying changes.
 
 ## Rules

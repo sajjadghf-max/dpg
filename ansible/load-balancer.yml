@@ -1,6 +1,0 @@
-- name: Configure the API and application load balancer
-  hosts: load_balancer
-  become: true
-  gather_facts: false
-  roles:
-    - load_balancer

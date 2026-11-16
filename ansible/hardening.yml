@@ -1,7 +1,0 @@
-- name: Harden lab hosts without replacing Kubernetes firewall rules
-  hosts: all
-  become: true
-  serial: 1
-  gather_facts: false
-  roles:
-    - host_hardening

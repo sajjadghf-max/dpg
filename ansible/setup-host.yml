@@ -1,6 +1,0 @@
-- name: Prepare the Ubuntu libvirt host
-  hosts: localhost
-  connection: local
-  gather_facts: true
-  roles:
-    - host_setup

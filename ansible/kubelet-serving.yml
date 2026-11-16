@@ -1,7 +1,0 @@
-- name: Enable kubelet serving certificate requests on the existing cluster
-  hosts: k8s_cluster
-  become: true
-  serial: 1
-  gather_facts: false
-  roles:
-    - kubelet_serving

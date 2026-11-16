@@ -1,6 +1,0 @@
-- name: Install an optional local lab CA on the VMs
-  hosts: lab
-  become: true
-  gather_facts: false
-  roles:
-    - trusted_ca

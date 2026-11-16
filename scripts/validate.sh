@@ -41,7 +41,10 @@ import ast,pathlib
 for p in pathlib.Path('scripts').glob('*.py'):ast.parse(p.read_text(),filename=str(p))
 print('OK shell and Python syntax')
 PY
-for playbook in platform verify images setup-host hardening check-hardening trust-ca load-balancer kubelet-serving; do
-  .state/validation-venv/bin/ansible-playbook -i inventory/lab/hosts.yml \
-    "ansible/$playbook.yml" --syntax-check
-done
+# The main playbook imports the real upstream Kubespray plays at parse time.
+if [[ ! -d vendor/kubespray ]]; then
+  mkdir -p vendor
+  git clone --depth 1 --branch v2.32.0 https://github.com/kubernetes-sigs/kubespray.git vendor/kubespray
+fi
+[[ "$(git -C vendor/kubespray rev-parse HEAD)" == 9751ea6f63244e433a7a6263d9ecf381e57bb8e9 ]]
+.state/validation-venv/bin/ansible-playbook -i inventory/lab/hosts.yml ansible/main.yml --syntax-check

@@ -1,9 +1,10 @@
+# Shared project settings. Default to verification; installation is explicit.
+lab_phase: verify
 # Controller-side paths; VM inventory remains in inventory/lab.
-project_dir: "{{ playbook_dir }}/.."
+project_dir: "{{ ansible_config_file | dirname }}"
 state_dir: "{{ project_dir }}/.state"
 kubeconfig: "{{ state_dir }}/artifacts/admin.conf"
 kubectl: "{{ state_dir }}/artifacts/kubectl"
-ansible_python_interpreter: "{{ ansible_playbook_python }}"
 git_ca_file: "{{ lookup('env', 'GIT_CA_FILE') }}"
 charts:
   metrics:

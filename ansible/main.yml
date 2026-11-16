@@ -1,0 +1,104 @@
+# Select a phase with -e lab_phase=host|cluster|hardening|images|platform|verify|all.
+- name: Prepare the Ubuntu libvirt host
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  pre_tasks:
+    - name: Validate the selected phase
+      ansible.builtin.assert:
+        that: lab_phase in ['host', 'cluster', 'hardening', 'images', 'platform', 'verify', 'all']
+      tags: [always]
+  roles:
+    - role: host_setup
+      when: lab_phase in ['host']
+- name: Install an optional local lab CA on the VMs
+  hosts: lab
+  become: true
+  gather_facts: false
+  roles:
+    - role: trusted_ca
+      when: lab_phase in ['cluster', 'all']
+- name: Configure the API and application load balancer
+  hosts: load_balancer
+  become: true
+  gather_facts: false
+  roles:
+    - role: load_balancer
+      when: lab_phase in ['cluster', 'all']
+- name: Provision Kubernetes with pinned Kubespray
+  ansible.builtin.import_playbook: ../vendor/kubespray/cluster.yml
+  become: true
+  when: lab_phase | default('verify') in ['cluster', 'all']
+- name: Harden lab hosts without replacing Kubernetes firewall rules
+  hosts: all
+  become: true
+  serial: 1
+  gather_facts: false
+  roles:
+    - role: host_hardening
+      when: lab_phase in ['cluster', 'hardening', 'all']
+- name: Build and export content-addressed application images
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: image_build
+      when: lab_phase in ['images', 'all']
+- name: Import images on each worker
+  hosts: kube_node
+  become: true
+  gather_facts: false
+  roles:
+    - role: image_import
+      when: lab_phase in ['images', 'all']
+- name: Enable kubelet serving certificate requests on the existing cluster
+  hosts: k8s_cluster
+  become: true
+  serial: 1
+  gather_facts: false
+  roles:
+    - role: kubelet_serving
+      when: lab_phase in ['platform', 'all']
+  tags:
+    - metrics
+- name: Configure the Kubernetes platform from the controller
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ state_dir }}/helm-plugins'
+    HELM_DIFF_USE_UPGRADE_DRY_RUN: 'true'
+  module_defaults:
+    group/kubernetes.core.k8s:
+      kubeconfig: '{{ kubeconfig }}'
+    kubernetes.core.helm:
+      kubeconfig: '{{ kubeconfig }}'
+      wait: true
+      atomic: true
+      timeout: 600s
+      reset_values: true
+      history_max: 5
+  roles:
+    - role: platform
+      when: lab_phase in ['platform', 'all']
+- name: Verify VM hardening
+  hosts: all
+  become: true
+  gather_facts: false
+  roles:
+    - role: host_verification
+      when: lab_phase in ['verify']
+  tags:
+    - hardening
+- name: Verify the running lab
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  module_defaults:
+    group/kubernetes.core.k8s:
+      kubeconfig: '{{ kubeconfig }}'
+    kubernetes.core.k8s_exec:
+      kubeconfig: '{{ kubeconfig }}'
+  roles:
+    - role: verification
+      when: lab_phase == 'verify'
